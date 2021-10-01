@@ -1,47 +1,37 @@
-from kivy.app import App
+from kivy.metrics import dp
 from kivy.uix.button import Button
-from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from functools import partial
+from kivymd.app import MDApp
+from kivymd.uix.datatables import MDDataTable
 
-
-class testclass:
-    def someth(*args, txt):
-        print(txt)
-
-
-class BeginScreen(Screen):
-    def __init__(self, **kwargs):
-        super(BeginScreen, self).__init__(**kwargs)
-        self.layout = BoxLayout(orientation='vertical', padding=20, spacing=5)
-        self.layout.add_widget(Label(text=str('Hello')))
-
-        # layout.add_widget(TextInput(id='test', text=''))  # id in python+kivy is deprecated
-        txtInput = TextInput(text='text input')
-        self.layout.add_widget(txtInput)
-        self.ids['test'] = txtInput
-
-        self.layout.add_widget(Button(text='Button!', on_press=partial(testclass.someth, txt=self.ids.test.text)))
-        self.add_widget(self.layout)
-
-        print("self.ids={}".format(self.ids))
-        print("self.ids['test']={}".format(self.ids['test']))
-        print("self.ids['test'].text={}".format(self.ids['test'].text))
-        print("self.ids.test.text={}".format(self.ids.test.text))
-        for key, val in self.ids.items():
-            print("key={0}, val={1}".format(key, val))
-
-
-class TestApp(App):
-    from kivy.config import Config
-    Config.set('graphics', 'width', '800')
-    Config.set('graphics', 'height', '400')
+class Example(MDApp):
 
     def build(self):
-        sm = ScreenManager()
-        sm.add_widget(BeginScreen(name='test'))
-        return sm
+        self.i = 0
+        self.rowData = ["Row. No."]
+        self.button = Button(text="AddRow", size_hint_y=None, pos_hint={"bottom": 0})
+        self.button.bind(texture_size=self.button.setter('size'))
+        self.data_tables = None
+        self.set_table(self.rowData)
 
-TestApp().run()
+    def set_table(self, data):
+        if self.data_tables:
+            self.data_tables.ids.container.remove_widget(self.button)
+
+        self.data_tables = MDDataTable(size_hint=(0.9, 0.6), use_pagination=True, check=True,
+                                       column_data=[("No.", dp(30))], row_data=[self.rowData])
+
+        self.data_tables.ids.container.add_widget(self.button)
+
+    def on_start(self):
+        self.data_tables.open()
+        self.button.bind(on_press=lambda x: self.addrow())
+
+    def addrow(self):
+        self.data_tables.dismiss(animation=False)
+        self.i += 1
+        self.set_table(self.rowData.append("Row {}".format(self.i)))
+        self.data_tables.open(animation=False)
+
+
+if __name__ == '__main__':
+    Example().run()

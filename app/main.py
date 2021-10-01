@@ -13,6 +13,7 @@ from validate_email import validate_email
 from kivymd.uix.dialog import MDDialog
 from kivy.core.window import Window
 from kivy.app import App
+from kivymd.uix.button import MDRectangleFlatIconButton, MDRectangleFlatButton, MDRaisedButton, MDIconButton
 
 from kivymd.uix.label import MDLabel
 
@@ -84,7 +85,7 @@ with open("./db_schema.json", "r") as f:
 ref = db.reference('/')
 ref.set(db_schema)
 
-
+left_arrow = "./icons/left-arrow.png"
 
 def load_yaml(file_yaml: str):
     with open(file_yaml, "r") as yamlfile:
@@ -108,9 +109,10 @@ class WelcomeScreen(Screen):
 class MainScreen(Screen):
     def __init__(self, **kwargs): super(Screen, self).__init__(**kwargs)
 
-    def on_enter(self):
+    def on_pre_enter(self):
         # Customize toolbar
-        self.ids.toolbar.title = self.parent.get_screen('login').ids.login_email.text
+        self.user = self.get_user()
+        self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 20
         for i in range(5):
             # Add dynamic group screens
@@ -122,15 +124,48 @@ class MainScreen(Screen):
                 OneLineListItem(text=f"Group {i}",
                                 on_press=lambda x: self.change_screen(f'Group {i}'))
             )
+            # Add layout
+            layout = BoxLayout(orientation='vertical')
+            self.ids.screen_manager.get_screen(f'Group {i}').add_widget(layout)
+            # Add back button
+            layout.add_widget(
+                MDIconButton(
+                    icon="./icons/left-arrow.png",
+                    user_font_size="0.0000001sp",
+                    on_press=self.get_main_screen('main')
+                )
+            )
             # Add dataframe
             df_input_data = pd.DataFrame(input_data)
             table = self.get_data_table(dataframe=df_input_data)
-            self.ids.screen_manager.get_screen(f'Group {i}').add_widget(table)
+            layout.add_widget(table)
+            # Add user button
+            layout.add_widget(
+                MDRaisedButton(
+                    text="Add new user",
+                    line_color=(1, 0, 1, 1),
+                )
+            )
+            # Add Run button
+            layout.add_widget(
+                MDRaisedButton(
+                    text="Run simulation",
+                    line_color=(1, 0, 1, 1))
+            )
 
+    def get_user(self):
+        return auth.get_user_by_email(self.parent.get_screen('login').ids.login_email.text)
+
+    def get_main_screen(self, scrren_name: str):
+        self.parent.current = scrren_name
+        self.ids.nav_drawer.set_state("close")
 
     def change_screen(self, scrren_name: str):
         self.ids.screen_manager.current = scrren_name
         self.ids.nav_drawer.set_state("close")
+
+    def add_user_button(self):
+        pass
 
     def get_data_table(self, dataframe: pd.DataFrame):
         column_data = list(dataframe.columns)
@@ -139,9 +174,11 @@ class MainScreen(Screen):
         table = MDDataTable(
             column_data=column_data,
             row_data=row_data,
-            use_pagination=True
+            use_pagination=True,
+            rows_num=len(dataframe)
         )
         return table
+
 
 class LoginScreen(Screen):
     pass
@@ -290,6 +327,7 @@ class Test(MDApp):
             details = {
                 'email': self.signupEmail,
                 'password': self.signupPassword,
+                'display_name': self.signupUsername,
                 'returnSecureToken': True
             }
             r = requests.post(self.requests_signup.format(self.web_apk),

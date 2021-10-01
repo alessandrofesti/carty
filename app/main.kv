@@ -1,0 +1,298 @@
+<ItemDrawer>:
+    theme_text_color: "Custom"
+    on_release: self.parent.set_color_item(self)
+    IconLeftWidget:
+        id: icon
+        icon: root.icon
+        theme_text_color: "Custom"
+        text_color: root.text_color
+
+<ContentNavigationDrawer>:
+    ScrollView:
+        MDList:
+            id: container
+            OneLineListItem:
+                text: "Screen 1"
+                on_press:
+                    root.nav_drawer.set_state("close")
+                    root.screen_manager.current = "scr 1"
+            OneLineListItem:
+                text: "Delete account"
+                on_press:
+                    root.nav_drawer.set_state("close")
+                    root.screen_manager.current = "scr delete"
+
+
+ScreenManager:
+    HelloScreen:
+    WelcomeScreen:
+    MainScreen:
+    LoginScreen:
+    SignupScreen:
+    InputScreen:
+    ForgotPasswordScreen:
+
+<HelloScreen>:
+    id: hello
+    name: 'hello'
+    MDLabel:
+        text: 'CARTY'
+        halign: 'center'
+        theme_text_color: 'Custom'
+        text_color: (0,0.4,0.2)
+        font_style: 'H1'
+        font_size: sp(50)
+        helper_text_mode: "on_focus"
+    MDLabel:
+        text: 'Optimize your party shifts'
+        pos_hint: {'center_x':0.5,'center_y':0.44}
+        halign: 'center'
+        theme_text_color: 'Custom'
+        text_color: (0,0.4,0.2)
+        font_style: 'H1'
+        font_size: sp(15)
+        helper_text_mode: "on_focus"
+    MDRectangleFlatButton:
+        text: 'GO'
+        pos_hint: {'center_x':0.5,'center_y':0.35}
+        on_press: root.manager.current = 'login'
+
+<WelcomeScreen>:
+    id: welcome
+    name:'welcome'
+    MDLabel:
+        text:'Login'
+        font_style:'H2'
+        halign:'center'
+        pos_hint: {'center_y':0.9}
+    MDLabel:
+        text:'&'
+        font_style:'H2'
+        halign:'center'
+        pos_hint: {'center_y':0.7}
+    MDLabel:
+        text:'Signup'
+        font_style:'H2'
+        halign:'center'
+        pos_hint: {'center_y':0.5}
+    MDRaisedButton:
+        text:'Login'
+        pos_hint : {'center_x':0.4,'center_y':0.3}
+        size_hint: (0.13,0.1)
+        on_press:
+            root.current = 'login'
+            root.manager.transition.direction = 'left'
+    MDRaisedButton:
+        text:'Signup'
+        pos_hint : {'center_x':0.6,'center_y':0.3}
+        size_hint: (0.13,0.1)
+        on_press:
+            root.manager.current = 'signup'
+            root.manager.transition.direction = 'left'
+
+<MainScreen>:
+    id: main
+    name: 'main'
+    MDToolbar:
+        id: toolbar
+        pos_hint: {"top": 1}
+        elevation: 10
+        title: "Ciao Bello"
+        left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+    MDNavigationLayout:
+        x: toolbar.height
+        ScreenManager:
+            id: screen_manager
+            MDScreen:
+                id: screen_general
+                name: "scr 1"
+                MDLabel:
+                    text: "Screen 1"
+                    halign: "center"
+            MDScreen:
+                id: screen_delete
+                name: "scr delete"
+                MDLabel:
+                    text: "Delete account"
+                    halign: "center"
+                MDRaisedButton:
+                    text:'Delete account'
+                    size_hint: (0.13,0.07)
+                    pos_hint: {'center_x':0.5,'center_y':0.8}
+                    on_press:
+                        app.DeleteAccount()
+                        root.manager.current = 'signup'
+
+        MDNavigationDrawer:
+            type: "standard"
+            id: nav_drawer
+            ContentNavigationDrawer:
+                id: contentnavigationdrawer
+                screen_manager: screen_manager
+                nav_drawer: nav_drawer
+
+<LoginScreen>:
+    id: login
+    name:'login'
+    MDLabel:
+        text:'Login'
+        font_style:'H2'
+        halign:'center'
+        pos_hint: {'center_y':0.9}
+    MDTextField:
+        id:login_email
+        pos_hint: {'center_y':0.6,'center_x':0.5}
+        size_hint : (0.7,0.1)
+        hint_text: 'Email'
+        helper_text:'Required'
+        helper_text_mode:  'on_error'
+        icon_right: 'account'
+        icon_right_color: app.theme_cls.primary_color
+        required: True
+        mode: "rectangle"
+    MDTextField:
+        id:login_password
+        pos_hint: {'center_y':0.4,'center_x':0.5}
+        size_hint : (0.7,0.1)
+        hint_text: 'Password'
+        helper_text:'Required'
+        helper_text_mode:  'on_error'
+        icon_right: 'account'
+        icon_right_color: app.theme_cls.primary_color
+        required: True
+        mode: "rectangle"
+    MDRaisedButton:
+        text:'Login'
+        size_hint: (0.13,0.07)
+        pos_hint: {'center_x':0.5,'center_y':0.2}
+        on_press:
+            app.login()
+    MDTextButton:
+        text: 'Create an account'
+        pos_hint: {'center_x':0.4,'center_y':0.1}
+        on_press:
+            root.manager.current = 'signup'
+            root.manager.transition.direction = 'up'
+    MDTextButton:
+        text: 'Forgot password'
+        pos_hint: {'center_x':0.6,'center_y':0.1}
+        on_press:
+            root.manager.current = 'resetpassword'
+
+<SignupScreen>:
+    id: signup
+    name:'signup'
+    MDLabel:
+        text:'Signup'
+        font_style:'H2'
+        halign:'center'
+        pos_hint: {'center_y':0.9}
+    MDTextField:
+        id:signup_email
+        pos_hint: {'center_y':0.6,'center_x':0.5}
+        size_hint : (0.7,0.1)
+        hint_text: 'Email'
+        helper_text:'Required'
+        helper_text_mode:  'on_error'
+        icon_right: 'account'
+        icon_right_color: app.theme_cls.primary_color
+        required: True
+        mode: "rectangle"
+    MDTextField:
+        id:signup_username
+        pos_hint: {'center_y':0.75,'center_x':0.5}
+        icon: 'check'
+        size_hint : (0.7,0.1)
+        hint_text: 'Username'
+        helper_text:'Required'
+        helper_text_mode:  'on_error'
+        icon_right: 'account'
+        icon_right_color: app.theme_cls.primary_color
+        required: True
+    MDTextField:
+        id:signup_password
+        pos_hint: {'center_y':0.4,'center_x':0.5}
+        icon: 'check'
+        size_hint : (0.7,0.1)
+        hint_text: 'Password'
+        helper_text:'Required'
+        helper_text_mode:  'on_error'
+        icon_right: 'account'
+        icon_right_color: app.theme_cls.primary_color
+        required: True
+        mode: "rectangle"
+    MDRaisedButton:
+        text:'Signup'
+        size_hint: (0.13,0.07)
+        pos_hint: {'center_x':0.5,'center_y':0.2}
+        on_press: app.signup()
+    MDTextButton:
+        text: 'Already have an account'
+        pos_hint: {'center_x':0.5,'center_y':0.1}
+        on_press:
+            root.manager.current = 'login'
+            root.manager.transition.direction = 'down'
+
+<InputScreen>:
+    id: input
+    name: 'input'
+    MDToolbar:
+        title: "Carty - optimize your shifts"
+        left_action_items: [["menu", lambda x: app.callback(x)]]
+        right_action_items: [["dots-vertical", lambda x: app.callback(x)]]
+    MDTextField:
+        hint_text: "Name"
+        mode: "rectangle"
+        pos_hint: {'center_x':0.5,'center_y':0.9}
+    MDFlatButton:
+        text: "Add"
+        pos_hint: {'center_x':0.5,'center_y':0.1}
+        font_size: sp(15)
+        theme_text_color: "Custom"
+        text_color: 0, 0, 1, 1
+    MDFloatingActionButtonSpeedDial:
+        root_button_anim: True
+
+<ForgotPasswordScreen>:
+    id: resetpassword
+    name: 'resetpassword'
+    MDLabel:
+        text:'Reset password'
+        font_style:'H5'
+        halign:'center'
+        pos_hint: {'center_y':0.9, 'center_x':0.3}
+    MDTextField:
+        id: reset
+        hint_text: "Insert your email address"
+        pos_hint: {'center_y':0.8,'center_x':0.5}
+        icon: 'check'
+        size_hint : (0.7,0.1)
+        helper_text:'Required'
+        helper_text_mode:  'on_error'
+        icon_right: 'account'
+        icon_right_color: app.theme_cls.primary_color
+        required: True
+        mode: "rectangle"
+    MDFlatButton:
+        text: "Send email"
+        pos_hint: {'center_x':0.5,'center_y':0.7}
+        font_size: sp(15)
+        theme_text_color: "Custom"
+        text_color: 0, 0, 1, 1
+        on_press:
+            app.SendResetEmail()
+            root.manager.current = 'login'
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -99,11 +99,18 @@ ScreenManager:
         elevation: 10
         title: "Ciao Bello"
         left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+        right_action_items: [["plus-circle", lambda x: app.root.ids.screen_manager.current="main"]]
     MDNavigationLayout:
         x: toolbar.height
         size_hint_y: 1.0 - toolbar.height/root.height
         ScreenManager:
             id: screen_manager
+            MDScreen:
+                id: screen_add_group
+                name: "scr add group"
+                MDLabel:
+                    text: "Screen add group"
+                    halign: "center"
             MDScreen:
                 id: screen_general
                 name: "scr 1"

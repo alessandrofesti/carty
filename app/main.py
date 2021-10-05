@@ -122,103 +122,109 @@ class MainScreen(Screen):
         self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 20
         self.user_groups = self.get_user_groups()
-        # self.dialog = self.dialog_button()
 
-        for i in range(5):
+        for group in self.user_groups:
+            self.group_screen = group
             # Add dynamic group screens
             self.ids.screen_manager.add_widget(
-                Screen(name=f'Group {i}'))
+                Screen(name=f'{self.group_screen}'))
             # Add groups list in scrollview
             self.ids.contentnavigationdrawer.ids.container.add_widget(
-                OneLineListItem(text=f"Group {i}",
-                                on_press=lambda x: self.change_screen(f'Group {i}')
+                OneLineListItem(text=f"{self.group_screen}",
+                                on_press=lambda x: self.change_screen(f'{self.group_screen}')
                                 )
             )
             # Add layout
-            layout = BoxLayout(orientation='vertical',
-                               spacing="12dp",
-                               padding="12dp")
-            self.ids.screen_manager.get_screen(f'Group {i}').add_widget(layout)
-            # Add dataframe
-            df_input_data = pd.DataFrame(input_data)
-            table = self.get_data_table(dataframe=df_input_data)
-            layout.add_widget(table)
-            # Add user button
-            layout.add_widget(
-                MDRaisedButton(
-                    text="Add your data",
-                    line_color=(1, 0, 1, 1),
-                    pos_hint={'center_x': .5, 'center_y': .5},
-                    on_press=lambda x: self.change_screen(f'Add user -- Group {i}')
-                )
-            )
-            # Add Run button
-            layout.add_widget(
-                MDRaisedButton(
-                    text="Run simulation",
-                    line_color=(1, 0, 1, 1),
-                    pos_hint={'center_x': .5, 'center_y': .5}
-                )
-            )
-            # User data
-            self.ids.screen_manager.add_widget(
-                Screen(name=f'Add user -- Group {i}'))
-            layout_user = BoxLayout(orientation='vertical',
+            self.layout = BoxLayout(orientation='vertical',
                                     spacing="12dp",
-                                    padding="12dp",
-                                    size_hint=(1, None),
-                                    pos_hint={'top': 1 - (1.5*self.ids.toolbar.height)/self.parent.height}
-                                    )
-            self.ids.screen_manager.get_screen(f'Add user -- Group {i}').add_widget(layout_user)
-            layout_user.add_widget(
-                MDTextField(
+                                    padding="12dp")
+            self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
+            # Add dataframe
+            table = self.get_data_table()
+            self.layout.add_widget(table)
+            self.create_run_data_buttons()
+            self.ids.screen_manager.add_widget(
+                Screen(name=f'Add user -- {self.group_screen}')
+            )
+            self.layout_user = BoxLayout(orientation='vertical',
+                                         spacing="12dp",
+                                         padding="12dp",
+                                         size_hint=(1, None),
+                                         pos_hint={'top': 1 - (1.5*self.ids.toolbar.height)/self.parent.height}
+                                         )
+            self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').add_widget(self.layout_user)
+            avaliable_places = MDTextField(
                     hint_text="free places avaliable - 0 if none",
                     helper_text="Required",
                     helper_text_mode="on_error",
                     pos_hint= {'center_x': 0.5, 'center_y': 0},
                     mode="rectangle"
                 )
-            )
+            self.layout_user.add_widget(avaliable_places)
+            self.ids['avaliable_places'] = weakref.ref(avaliable_places)
             address_data = MDTextField(
                     hint_text="Your address of departure - street, number, city",
                     helper_text="Required",
                     helper_text_mode="on_error",
                     mode="rectangle"
                 )
-            layout_user.add_widget(address_data)
-            # Set id reference to buttons
+            self.layout_user.add_widget(address_data)
             self.ids['address_button'] = weakref.ref(address_data)
-            ####
-            free_places = MDRaisedButton(
+            add_data_button = MDRaisedButton(
                     text="Add your data",
                     line_color=(1, 0, 1, 1),
                     pos_hint={'center_x': 0.5},
                     on_release=self.get_update_user_data
                 )
-            layout_user.add_widget(free_places)
-            self.ids['free_places_button'] = weakref.ref(address_data)
+            self.layout_user.add_widget(add_data_button)
+            self.ids['add_data_button'] = weakref.ref(add_data_button)
+
+    def create_run_data_buttons(self, *args):
+        self.layout.add_widget(
+            MDRaisedButton(
+                text="Add your data",
+                line_color=(1, 0, 1, 1),
+                pos_hint={'center_x': .5, 'center_y': .5},
+                on_press=lambda x: self.change_screen(f'Add user -- {self.group_screen}')
+            )
+        )
+        # Add Run button
+        self.layout.add_widget(
+            MDRaisedButton(
+                text="Run simulation",
+                line_color=(1, 0, 1, 1),
+                pos_hint={'center_x': .5, 'center_y': .5}
+            )
+        )
+
+    def update_data_table(self, *args):
+        table = self.get_data_table()
+        self.layout.clear_widgets()
+        self.layout.add_widget(table)
+        self.create_run_data_buttons()
 
     def get_user_groups(self):
         groups = []
-        for group in self.ref.child('groups').get().keys():
+        group_path = self.ref.child('groups').get().keys()
+        for group in group_path:
             if self.user.uid in self.ref.child('groups').child(f"{group}").child("group_users").get().keys():
                 groups.append(group)
         return groups
 
-    def get_update_user_data(self, *args):
+    def get_update_user_data(self, group, *args):
         self.address_button = self.ids.address_button.text
-        self.free_places_button = self.ids.free_places_button.text
-        # TODO: change group instance
-        self.group = "cappellania"
+        self.avaliable_places_button = self.ids.avaliable_places.text
 
         data_to_set = {
             f"{self.user.uid}": {
                 "address": self.address_button,
-                "avaliable_places": self.free_places_button
+                "avaliable places": self.avaliable_places_button
             }
         }
-        self.ref.child('groups').child(f'{self.group}').child('users_data').update(data_to_set)
-        print(self.ref)
+
+        self.ref.child('groups').child(f'{self.group_screen}').child('users_data').update(data_to_set)
+        self.update_data_table()
+        self.change_screen(self.group_screen)
 
     def get_box_layout(self):
         bl = BoxLayout(orientation='vertical',
@@ -242,15 +248,34 @@ class MainScreen(Screen):
     def add_user_button(self):
         pass
 
-    def get_data_table(self, dataframe: pd.DataFrame):
-        column_data = list(dataframe.columns)
+    def get_group_data(self):
+        group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users_data').get()
+        df_list = []
+        for uid in group_path.keys():
+            user = auth.get_user(uid)
+            username = user.display_name
+            dict_grpup = group_path[uid]
+            dict_grpup.update({
+                "user": username
+            })
+            df = pd.DataFrame.from_dict(dict_grpup, orient='index')
+            df_list.append(df)
+
+        df_group = pd.concat(df_list, axis=1).T.reset_index(drop=True)
+        df_group = df_group[['user', "address", "avaliable places"]]
+        return df_group
+
+    def get_data_table(self):
+        df_group = self.get_group_data()
+        column_data = list(df_group.columns)
         column_data = [(x, dp(60)) for x in column_data]
-        row_data = dataframe.to_records(index=False)
+        row_data = df_group.to_records(index=False)
         table = MDDataTable(
             column_data=column_data,
             row_data=row_data,
+            #check=True,
             use_pagination=True,
-            rows_num=len(dataframe)
+            rows_num=len(df_group)+3
         )
         return table
 

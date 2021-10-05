@@ -1,32 +1,19 @@
 {
-	"uids":
-	{
-		"qJFtXvZrqzefVlNIqyTpgg5TMf03": {
-			"username": "fiester"
-		},
-		"M34csdZUnvQxDJsKPQ9OJEI7BpX2": {
-			"username": "fiester2"
-		}
-	},
 	"groups":
 	{
 		"cappellania": {
 			"admin": {
-				"admin_uid": "qJFtXvZrqzefVlNIqyTpgg5TMf03",
+				"admin_uid": "Fsn3LAdD2wS2hcHecvA7aEH1Ovy2",
 				"password": 123456
 			},
-			"users": {
-				"qJFtXvZrqzefVlNIqyTpgg5TMf03": true,
-				"M34csdZUnvQxDJsKPQ9OJEI7BpX2": true
-			}
-		},
-		"essence": {
-			"admin": {
-				"admin_uid": "M34csdZUnvQxDJsKPQ9OJEI7BpX2",
-				"password": 123456
+			"group_users": {
+				"Fsn3LAdD2wS2hcHecvA7aEH1Ovy2": true
 			},
-			"users": {
-				"M34csdZUnvQxDJsKPQ9OJEI7BpX2": true
+			"users_data": {
+				"Fsn3LAdD2wS2hcHecvA7aEH1Ovy2": {
+					"address": "via oslavia 5 Bologna",
+					"avaliable places": 5
+				}
 			}
 		}
 	}

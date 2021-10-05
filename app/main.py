@@ -13,6 +13,8 @@ from validate_email import validate_email
 from kivymd.uix.dialog import MDDialog
 from kivy.core.window import Window
 from kivy.app import App
+from kivymd.uix.textfield import MDTextField
+import weakref
 from kivymd.uix.button import MDRectangleFlatIconButton, MDRectangleFlatButton, MDRaisedButton, MDIconButton
 
 from kivymd.uix.label import MDLabel
@@ -39,6 +41,7 @@ import yaml
 import json
 from kivymd.uix.list import OneLineListItem
 from kivymd.uix.datatables import MDDataTable
+from kivymd.uix.dialog import MDDialog
 
 # buildozer -v android clean
 
@@ -68,6 +71,8 @@ import pandas as pd
 
 from data import input_data
 from kivy.uix.textinput import TextInput
+
+# festi.alessandro00@gmail.com
 
 
 import json
@@ -107,34 +112,33 @@ class WelcomeScreen(Screen):
 
 
 class MainScreen(Screen):
-    def __init__(self, **kwargs): super(Screen, self).__init__(**kwargs)
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.ref = ref
 
     def on_pre_enter(self):
         # Customize toolbar
         self.user = self.get_user()
         self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 20
+        self.user_groups = self.get_user_groups()
+        # self.dialog = self.dialog_button()
+
         for i in range(5):
             # Add dynamic group screens
             self.ids.screen_manager.add_widget(
-                Screen(name=f'Group {i}')
-            )
+                Screen(name=f'Group {i}'))
             # Add groups list in scrollview
             self.ids.contentnavigationdrawer.ids.container.add_widget(
                 OneLineListItem(text=f"Group {i}",
-                                on_press=lambda x: self.change_screen(f'Group {i}'))
+                                on_press=lambda x: self.change_screen(f'Group {i}')
+                                )
             )
             # Add layout
-            layout = BoxLayout(orientation='vertical')
+            layout = BoxLayout(orientation='vertical',
+                               spacing="12dp",
+                               padding="12dp")
             self.ids.screen_manager.get_screen(f'Group {i}').add_widget(layout)
-            # Add back button
-            layout.add_widget(
-                MDIconButton(
-                    icon="./icons/left-arrow.png",
-                    user_font_size="0.0000001sp",
-                    on_press=self.get_main_screen('main')
-                )
-            )
             # Add dataframe
             df_input_data = pd.DataFrame(input_data)
             table = self.get_data_table(dataframe=df_input_data)
@@ -142,16 +146,87 @@ class MainScreen(Screen):
             # Add user button
             layout.add_widget(
                 MDRaisedButton(
-                    text="Add new user",
+                    text="Add your data",
                     line_color=(1, 0, 1, 1),
+                    pos_hint={'center_x': .5, 'center_y': .5},
+                    on_press=lambda x: self.change_screen(f'Add user -- Group {i}')
                 )
             )
             # Add Run button
             layout.add_widget(
                 MDRaisedButton(
                     text="Run simulation",
-                    line_color=(1, 0, 1, 1))
+                    line_color=(1, 0, 1, 1),
+                    pos_hint={'center_x': .5, 'center_y': .5}
+                )
             )
+            # User data
+            self.ids.screen_manager.add_widget(
+                Screen(name=f'Add user -- Group {i}'))
+            layout_user = BoxLayout(orientation='vertical',
+                                    spacing="12dp",
+                                    padding="12dp",
+                                    size_hint=(1, None),
+                                    pos_hint={'top': 1 - (1.5*self.ids.toolbar.height)/self.parent.height}
+                                    )
+            self.ids.screen_manager.get_screen(f'Add user -- Group {i}').add_widget(layout_user)
+            layout_user.add_widget(
+                MDTextField(
+                    hint_text="free places avaliable - 0 if none",
+                    helper_text="Required",
+                    helper_text_mode="on_error",
+                    pos_hint= {'center_x': 0.5, 'center_y': 0},
+                    mode="rectangle"
+                )
+            )
+            address_data = MDTextField(
+                    hint_text="Your address of departure - street, number, city",
+                    helper_text="Required",
+                    helper_text_mode="on_error",
+                    mode="rectangle"
+                )
+            layout_user.add_widget(address_data)
+            # Set id reference to buttons
+            self.ids['address_button'] = weakref.ref(address_data)
+            ####
+            free_places = MDRaisedButton(
+                    text="Add your data",
+                    line_color=(1, 0, 1, 1),
+                    pos_hint={'center_x': 0.5},
+                    on_release=self.get_update_user_data
+                )
+            layout_user.add_widget(free_places)
+            self.ids['free_places_button'] = weakref.ref(address_data)
+
+    def get_user_groups(self):
+        groups = []
+        for group in self.ref.child('groups').get().keys():
+            if self.user.uid in self.ref.child('groups').child(f"{group}").child("group_users").get().keys():
+                groups.append(group)
+        return groups
+
+    def get_update_user_data(self, *args):
+        self.address_button = self.ids.address_button.text
+        self.free_places_button = self.ids.free_places_button.text
+        # TODO: change group instance
+        self.group = "cappellania"
+
+        data_to_set = {
+            f"{self.user.uid}": {
+                "address": self.address_button,
+                "avaliable_places": self.free_places_button
+            }
+        }
+        self.ref.child('groups').child(f'{self.group}').child('users_data').update(data_to_set)
+        print(self.ref)
+
+    def get_box_layout(self):
+        bl = BoxLayout(orientation='vertical',
+                       spacing="12dp",
+                       padding="12dp",
+                       size_hint=(1, None),
+                       pos_hint={'top': 1})
+        return bl
 
     def get_user(self):
         return auth.get_user_by_email(self.parent.get_screen('login').ids.login_email.text)
@@ -178,6 +253,19 @@ class MainScreen(Screen):
             rows_num=len(dataframe)
         )
         return table
+
+    def dialog_button(self):
+        self.dialog = MDDialog(
+            text="Discard draft?",
+            buttons=[
+                MDFlatButton(text="CANCEL"), MDRaisedButton(text="DISCARD"),
+            ],
+        )
+        return self.dialog.open()
+
+    def close_username_dialog(self, *args):
+        self.dialog.dismiss()
+
 
 
 class LoginScreen(Screen):
@@ -244,18 +332,6 @@ class Test(MDApp):
         self.strng = load_kv('main.kv')
         return self.strng
 
-    def dialog_button(self,
-                      text_button: str,
-                      dialog_title: str,
-                      dialog_text: str):
-        cancel_btn_username_dialogue_mail = MDFlatButton(text=text_button,
-                                                         on_release=self.close_username_dialog)
-        self.dialog = MDDialog(title=dialog_title,
-                               text=dialog_text,
-                               size_hint=(0.7, 0.2),
-                               buttons=[cancel_btn_username_dialogue_mail])
-        self.dialog.open()
-
     def VerifyEmail(self):
         payload = json.dumps({
             "requestType": "VERIFY_EMAIL",
@@ -300,7 +376,7 @@ class Test(MDApp):
             self.dialog_button(text_button='OK',
                                dialog_title='Reset email',
                                dialog_text=f'Email sent to {self.resetEmail}')
-            self.dialog.open()
+            #self.dialog.open()
             return r.json()
 
     add_ScreenManager()
@@ -361,7 +437,6 @@ class Test(MDApp):
         details = {
             'email': self.loginEmail,
             'password': self.loginPassword,
-            #'displayName': self.
             'returnSecureToken': True
         }
 
@@ -388,9 +463,21 @@ class Test(MDApp):
                                dialog_title='Error',
                                dialog_text='Unknown error')
 
-    def close_username_dialog(self, obj):
-        self.dialog.dismiss()
+    def dialog_button(self,
+                      text_button: str,
+                      dialog_title: str,
+                      dialog_text: str):
 
+        cancel_btn_username_dialogue_mail = MDFlatButton(text=text_button,
+                                                         on_release=self.close_username_dialog)
+        self.dialog = MDDialog(title=dialog_title,
+                               text=dialog_text,
+                               size_hint=(0.7, 0.2),
+                               buttons=[cancel_btn_username_dialogue_mail])
+        self.dialog.open()
+
+    def close_username_dialog(self, *args):
+        self.dialog.dismiss()
 
 
     # def username_changer(self):

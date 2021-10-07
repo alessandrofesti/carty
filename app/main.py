@@ -2,10 +2,11 @@ import os
 
 from kivy.lang import Builder
 
+from kivy.clock import Clock
 from kivymd.app import MDApp
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.snackbar import Snackbar
-from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton
 from kivymd.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from kivy.properties import ObjectProperty, NumericProperty
@@ -31,6 +32,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 
 from kivy.lang import Builder
 
+from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.app import MDApp
 
@@ -104,12 +106,15 @@ class ContentNavigationDrawer(MDBoxLayout):
 
 
 class HelloScreen(Screen):
-    pass
+    def on_enter(self, *args):
+        print("on Enter")
+        Clock.schedule_once(self.callbackfun, 3)
 
-
-class WelcomeScreen(Screen):
-    pass
-
+    def callbackfun(self, dt):
+        print("Change Screen")
+        print(self.manager.current)
+        print(self.manager.next())
+        self.manager.current = 'login'
 
 class MainScreen(Screen):
     def __init__(self, **kw):
@@ -146,34 +151,44 @@ class MainScreen(Screen):
             self.ids.screen_manager.add_widget(
                 Screen(name=f'Add user -- {self.group_screen}')
             )
-            self.layout_user = BoxLayout(orientation='vertical',
-                                         spacing="12dp",
-                                         padding="12dp",
-                                         size_hint=(1, None),
-                                         pos_hint={'top': 1 - (1.5*self.ids.toolbar.height)/self.parent.height}
-                                         )
+            self.layout_user = MDFloatLayout(
+                size=(self.width, self.height))
             self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').add_widget(self.layout_user)
+            dice_icon = MDIconButton(
+                icon="dice-multiple",
+                user_font_size=40,
+                theme_text_color="Custom",
+                #text_color=app.theme_cls.primary_color
+                pos_hint={'top': 0.9, 'center_x': 0.5}
+            )
+            self.layout_user.add_widget(dice_icon)
+            self.ids['dice_icon'] = weakref.ref(dice_icon)
             avaliable_places = MDTextField(
-                    hint_text="free places avaliable - 0 if none",
-                    helper_text="Required",
-                    helper_text_mode="on_error",
-                    pos_hint= {'center_x': 0.5, 'center_y': 0},
-                    mode="rectangle"
+                halign="center",
+                size_hint_x=0.6,
+                size_hint_y=0.1,
+                hint_text="Number of free places avaliable (0 if none)",
+                pos_hint={'top': 0.75, 'center_x': 0.5},
+                mode="line"
                 )
             self.layout_user.add_widget(avaliable_places)
             self.ids['avaliable_places'] = weakref.ref(avaliable_places)
             address_data = MDTextField(
-                    hint_text="Your address of departure - street, number, city",
-                    helper_text="Required",
-                    helper_text_mode="on_error",
-                    mode="rectangle"
-                )
+                halign="center",
+                size_hint_x=0.6,
+                size_hint_y=0.1,
+                hint_text="Your address of departure",
+                pos_hint={'top': 0.65, 'center_x': 0.5},
+                mode="line"
+            )
             self.layout_user.add_widget(address_data)
             self.ids['address_button'] = weakref.ref(address_data)
-            add_data_button = MDRaisedButton(
-                    text="Add your data",
-                    line_color=(1, 0, 1, 1),
-                    pos_hint={'center_x': 0.5},
+            add_data_button = MDFillRoundFlatButton(
+                    text="OK",
+                    size_hint_x=5,
+                    size_hint_y=5,
+                    size=(0.7, 0.05),
+                    pos_hint={'top': 0.5, 'center_x': 0.5},
                     on_release=self.get_update_user_data
                 )
             self.layout_user.add_widget(add_data_button)
@@ -181,8 +196,9 @@ class MainScreen(Screen):
 
     def create_run_data_buttons(self, *args):
         self.layout.add_widget(
-            MDRaisedButton(
+            MDFillRoundFlatButton(
                 text="Add your data",
+                size=(0.7, 0.05),
                 line_color=(1, 0, 1, 1),
                 pos_hint={'center_x': .5, 'center_y': .5},
                 on_press=lambda x: self.change_screen(f'Add user -- {self.group_screen}')
@@ -190,7 +206,7 @@ class MainScreen(Screen):
         )
         # Add Run button
         self.layout.add_widget(
-            MDRaisedButton(
+            MDFillRoundFlatButton(
                 text="Run simulation",
                 line_color=(1, 0, 1, 1),
                 pos_hint={'center_x': .5, 'center_y': .5}
@@ -332,7 +348,6 @@ class DrawerList(ThemableBehavior, MDList):
 def add_ScreenManager():
     sm = ScreenManager()
     sm.add_widget(HelloScreen(name='hello'))
-    sm.add_widget(WelcomeScreen(name='welcome'))
     sm.add_widget(MainScreen(name='main'))
     sm.add_widget(LoginScreen(name='login'))
     sm.add_widget(SignupScreen(name='signup'))
@@ -355,6 +370,9 @@ class Test(MDApp):
 
     def build(self):
         self.strng = load_kv('main.kv')
+        self.theme_cls.primary_palette = "Purple"
+        self.theme_cls.primary_hue = "300"
+        self.theme_cls.accent_palette = "Purple"
         return self.strng
 
     def VerifyEmail(self):
@@ -504,10 +522,6 @@ class Test(MDApp):
     def close_username_dialog(self, *args):
         self.dialog.dismiss()
 
-
-    # def username_changer(self):
-    #     if self.login_check:
-    #         self.strng.get_screen('main').ids.username_info.text = "welcome"
 
 
 if __name__ == '__main__':

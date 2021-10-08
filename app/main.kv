@@ -103,7 +103,7 @@ ScreenManager:
                         color_mode: 'accent'
                         icon_right: 'account'
                     MDTextField:
-                        id: group password
+                        id: group_password
                         halign: "center"
                         size_hint_x: .6
                         size_hint_y: .1
@@ -113,7 +113,7 @@ ScreenManager:
                         color_mode: 'accent'
                         icon_right: 'onepassword'
                     MDTextField:
-                        id: destination address
+                        id: group_destination_address
                         halign: "center"
                         size_hint_x: .6
                         size_hint_y: .1
@@ -122,13 +122,32 @@ ScreenManager:
                         mode: "line"
                         color_mode: 'accent'
                         icon_right: 'google-maps'
+                    MDTextField:
+                        id: user_departure_address
+                        halign: "center"
+                        size_hint_x: .6
+                        size_hint_y: .1
+                        pos_hint: {'top': 0.4, 'center_x': 0.5}
+                        hint_text: 'Your departure address'
+                        mode: "line"
+                        color_mode: 'accent'
+                        icon_right: 'google-maps'
+                    MDTextField:
+                        id: user_n_avaliable_places
+                        halign: "center"
+                        size_hint_x: .6
+                        size_hint_y: .1
+                        pos_hint: {'top': 0.3, 'center_x': 0.5}
+                        hint_text: 'Number of avaliable places you have (you can change it later)'
+                        mode: "line"
+                        color_mode: 'accent'
+                        icon_right: 'account-group'
                     MDFillRoundFlatButton:
-                        pos_hint: {'top': 0.35, 'center_x': 0.5}
+                        pos_hint: {'top': 0.15, 'center_x': 0.5}
                         size_hint_x: .7
                         size_hint_y: .05
                         text:'Create new group'
-                        on_press:
-                            app.main()
+                        on_press: root.create_new_group()
             MDScreen:
                 id: screen_profile
                 name: "screen profile"
@@ -187,8 +206,7 @@ ScreenManager:
                         size_hint_x: .7
                         size_hint_y: .05
                         text:'Join exixsting group'
-                        on_press:
-                            app.main()
+                        on_press: root.create_new_group
 
         MDNavigationDrawer:
             type: "standard"
@@ -228,13 +246,13 @@ ScreenManager:
             halign: "center"
             size_hint_x: .6
             size_hint_y: .1
-            pos_hint: {'top': 0.5, 'center_x': 0.5}
+            pos_hint: {'top': 0.55, 'center_x': 0.5}
             hint_text: 'Password'
             mode: "line"
             color_mode: 'accent'
             icon_right: 'onepassword'
         MDFillRoundFlatButton:
-            pos_hint: {'top': 0.35, 'center_x': 0.5}
+            pos_hint: {'top': 0.4, 'center_x': 0.5}
             size_hint_x: .7
             size_hint_y: .05
             text:'Login'
@@ -242,13 +260,13 @@ ScreenManager:
                 app.login()
         MDTextButton:
             text: 'Create an account'
-            pos_hint: {'top': 0.2, 'center_x': 0.4}
+            pos_hint: {'top': 0.3, 'center_x': 0.4}
             on_press:
                 root.manager.current = 'signup'
                 root.manager.transition.direction = 'up'
         MDTextButton:
             text: 'Forgot password'
-            pos_hint: {'top': 0.2, 'center_x': 0.6}
+            pos_hint: {'top': 0.3, 'center_x': 0.6}
             on_press:
                 root.manager.current = 'resetpassword'
 
@@ -304,7 +322,7 @@ ScreenManager:
             size_hint_y: .05
             text:'Signup'
             on_press:
-                app.login()
+                app.signup()
         MDTextButton:
             text: 'Login'
             pos_hint: {'top': 0.3, 'center_x': 0.5}
@@ -335,36 +353,6 @@ ScreenManager:
 <ForgotPasswordScreen>:
     id: resetpassword
     name: 'resetpassword'
-    MDLabel:
-        text:'Reset password'
-        font_style:'H5'
-        halign:'center'
-        pos_hint: {'center_y':0.9, 'center_x':0.3}
-    MDTextField:
-        id: reset
-        hint_text: "Insert your email address"
-        pos_hint: {'center_y':0.8,'center_x':0.5}
-        icon: 'check'
-        size_hint : (0.7,0.1)
-        helper_text:'Required'
-        helper_text_mode:  'on_error'
-        icon_right: 'account'
-        icon_right_color: app.theme_cls.primary_color
-        required: True
-        mode: "rectangle"
-    MDFlatButton:
-        text: "Send email"
-        pos_hint: {'center_x':0.5,'center_y':0.7}
-        font_size: sp(15)
-        theme_text_color: "Custom"
-        text_color: 0, 0, 1, 1
-        on_press:
-            app.SendResetEmail()
-            root.manager.current = 'login'
-
-<ForgotPasswordScreen>:
-    id: resetpassword
-    name: 'resetpassword'
     MDFloatLayout:
         size: root.width, root.height
         canvas.before:
@@ -378,7 +366,7 @@ ScreenManager:
             text_color: app.theme_cls.primary_color
             pos_hint: {'top': 0.8, 'center_x': 0.5}
         MDTextField:
-            id:forgot_email
+            id:reset_email
             halign: "center"
             size_hint_x: .6
             size_hint_y: .1

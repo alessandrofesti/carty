@@ -77,7 +77,12 @@ from kivy.uix.textinput import TextInput
 # festi.alessandro00@gmail.com
 
 
+# TODO:
+#   add password button
+#   unjoin user from group
+
 import json
+import pdb
 
 if not firebase_admin._apps:
     cred = credentials.Certificate("./carty-7373e-firebase-adminsdk-vuzij-94930417b9.json")
@@ -86,13 +91,23 @@ if not firebase_admin._apps:
         'databaseURL': 'https://carty-7373e-default-rtdb.europe-west1.firebasedatabase.app/'
     })
 
-with open("./db_schema.json", "r") as f:
-    db_schema = json.load(f)
+# with open("./db_schema.json", "r") as f:
+#     db_schema = json.load(f)
 
 ref = db.reference('/')
-ref.set(db_schema)
+# ref.set(db_schema)
 
-left_arrow = "./icons/left-arrow.png"
+# debugger carino https://kivy.org/doc/stable/api-kivy.modules.webdebugger.html
+
+# for i in self.ids.screen_manager.get_screen('www').children:
+#     for j in i.children:
+#         print(j)
+#         try:
+#             print(j.row_data)
+#         except:
+#             print('no data table')
+
+import time
 
 def load_yaml(file_yaml: str):
     with open(file_yaml, "r") as yamlfile:
@@ -104,95 +119,119 @@ class ContentNavigationDrawer(MDBoxLayout):
     screen_manager = ObjectProperty()
     nav_drawer = ObjectProperty()
 
-
 class HelloScreen(Screen):
     def on_enter(self, *args):
         print("on Enter")
         Clock.schedule_once(self.callbackfun, 3)
 
     def callbackfun(self, dt):
-        print("Change Screen")
-        print(self.manager.current)
-        print(self.manager.next())
         self.manager.current = 'login'
 
 class MainScreen(Screen):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        self.ref = ref
 
     def on_pre_enter(self):
         # Customize toolbar
         self.user = self.get_user()
+        self.app = Test.get_running_app()
+        self.ref = self.app.ref
         self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 20
         self.user_groups = self.get_user_groups()
 
         for group in self.user_groups:
             self.group_screen = group
-            # Add dynamic group screens
-            self.ids.screen_manager.add_widget(
-                Screen(name=f'{self.group_screen}'))
-            # Add groups list in scrollview
-            self.ids.contentnavigationdrawer.ids.container.add_widget(
-                OneLineListItem(text=f"{self.group_screen}",
-                                on_press=lambda x: self.change_screen(f'{self.group_screen}')
-                                )
-            )
-            # Add layout
-            self.layout = BoxLayout(orientation='vertical',
-                                    spacing="12dp",
-                                    padding="12dp")
-            self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
-            # Add dataframe
-            table = self.get_data_table()
-            self.layout.add_widget(table)
+            #print(self.group_screen)
+            self.add_dynamic_screen()
+            self.add_groups_in_scrollview()
+            self.create_user_data_layout()
+            self.create_group_data_to_layout()
             self.create_run_data_buttons()
-            self.ids.screen_manager.add_widget(
-                Screen(name=f'Add user -- {self.group_screen}')
-            )
-            self.layout_user = MDFloatLayout(
-                size=(self.width, self.height))
-            self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').add_widget(self.layout_user)
-            dice_icon = MDIconButton(
-                icon="dice-multiple",
-                user_font_size=40,
-                theme_text_color="Custom",
-                #text_color=app.theme_cls.primary_color
-                pos_hint={'top': 0.9, 'center_x': 0.5}
-            )
-            self.layout_user.add_widget(dice_icon)
-            self.ids['dice_icon'] = weakref.ref(dice_icon)
-            avaliable_places = MDTextField(
-                halign="center",
-                size_hint_x=0.6,
-                size_hint_y=0.1,
-                hint_text="Number of free places avaliable (0 if none)",
-                pos_hint={'top': 0.75, 'center_x': 0.5},
-                mode="line"
-                )
-            self.layout_user.add_widget(avaliable_places)
-            self.ids['avaliable_places'] = weakref.ref(avaliable_places)
-            address_data = MDTextField(
-                halign="center",
-                size_hint_x=0.6,
-                size_hint_y=0.1,
-                hint_text="Your address of departure",
-                pos_hint={'top': 0.65, 'center_x': 0.5},
-                mode="line"
-            )
-            self.layout_user.add_widget(address_data)
-            self.ids['address_button'] = weakref.ref(address_data)
-            add_data_button = MDFillRoundFlatButton(
-                    text="OK",
-                    size_hint_x=5,
-                    size_hint_y=5,
-                    size=(0.7, 0.05),
-                    pos_hint={'top': 0.5, 'center_x': 0.5},
-                    on_release=self.get_update_user_data
-                )
-            self.layout_user.add_widget(add_data_button)
-            self.ids['add_data_button'] = weakref.ref(add_data_button)
+
+        print('debug stop cazzo dio di un dio')
+        self.main_main()
+        # self.ids.screen_manager.screen_names
+
+
+    def main_main(self):
+        #self.group_screen=self.ids.screen_manager.current
+        pass
+
+    def add_dynamic_screen(self):
+        self.ids.screen_manager.add_widget(
+            Screen(name=f"{self.group_screen}"))
+
+    def add_user_data_screen(self):
+        self.ids.screen_manager.add_widget(
+            Screen(name=f'Add user -- {self.group_screen}')
+        )
+
+    def add_groups_in_scrollview(self):
+        self.ids.contentnavigationdrawer.ids.container.add_widget(
+            OneLineListItem(text=f"{self.group_screen}",
+                            on_press=self.change_screen_scrollview) #lambda x: self.change_screen(f"{self.group_screen}"
+        )
+
+    def change_screen_scrollview(self, *args):
+        self.ids.screen_manager.current = self.group_screen
+        self.ids.nav_drawer.set_state("close")
+
+
+    def create_user_data_layout(self):
+        self.add_user_data_screen()
+        self.layout_user = MDFloatLayout(
+            size=(self.width,
+                  self.height)
+        )
+        self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').add_widget(self.layout_user)
+        dice_icon = MDIconButton(
+            icon="dice-multiple",
+            user_font_size=40,
+            theme_text_color="Custom",
+            # text_color=app.theme_cls.primary_color
+            pos_hint={'top': 0.9, 'center_x': 0.5}
+        )
+        self.layout_user.add_widget(dice_icon)
+        self.ids['dice_icon'] = weakref.ref(dice_icon)
+        avaliable_places = MDTextField(
+            halign="center",
+            size_hint_x=0.6,
+            size_hint_y=0.1,
+            hint_text="Number of free places avaliable (0 if none)",
+            pos_hint={'top': 0.75, 'center_x': 0.5},
+            mode="line"
+        )
+        self.layout_user.add_widget(avaliable_places)
+        self.ids['avaliable_places'] = weakref.ref(avaliable_places)
+        address_data = MDTextField(
+            halign="center",
+            size_hint_x=0.6,
+            size_hint_y=0.1,
+            hint_text="Your address of departure",
+            pos_hint={'top': 0.65, 'center_x': 0.5},
+            mode="line"
+        )
+        self.layout_user.add_widget(address_data)
+        self.ids['address_button'] = weakref.ref(address_data)
+        add_data_button = MDFillRoundFlatButton(
+            text="OK",
+            size_hint_x=5,
+            size_hint_y=5,
+            size=(0.7, 0.05),
+            pos_hint={'top': 0.5, 'center_x': 0.5},
+            on_release=self.get_update_user_data
+        )
+        self.layout_user.add_widget(add_data_button)
+        self.ids['add_data_button'] = weakref.ref(add_data_button)
+
+    def create_group_data_to_layout(self):
+        self.layout = BoxLayout(orientation='vertical',
+                                spacing="12dp",
+                                padding="12dp")
+
+        self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
+        self.table = self.get_data_table()
+        print(self.table.row_data)
+        self.layout.add_widget(self.table)
 
     def create_run_data_buttons(self, *args):
         self.layout.add_widget(
@@ -213,42 +252,78 @@ class MainScreen(Screen):
             )
         )
 
+    def create_new_group(self):
+        self.group_name = self.ids.group_name.text
+        self.group_password = self.ids.group_password.text
+        self.group_destination_address = self.ids.group_destination_address.text
+        self.user_departure_address = self.ids.user_departure_address.text
+        self.user_n_avaliable_places = self.ids.user_n_avaliable_places.text
+
+        data_to_set = {
+            f"{self.group_name}": {
+                "admin": {
+                    "admin uid": self.user.uid,
+                    "password": self.group_password,
+                    "destination address": self.group_destination_address
+                },
+                "group users": {
+                    f"{self.user.uid}": True
+                },
+                "users data": {
+                    f"{self.user.uid}": {
+                        "address": self.user_departure_address,
+                        "avaliable places": self.user_n_avaliable_places #TODO: check toint
+                    }
+                }
+            }
+        }
+
+        if not self.group_name in self.ref.child('groups').get().keys():
+            self.ref.child('groups').update(data_to_set)
+            self.dialog_button(text_button='OK',
+                               dialog_title='Group created',
+                               dialog_text='Share the group password with your friends to let them join the group')
+        else:
+            self.dialog_button(text_button='Retry',
+                               dialog_title='Group name already exists',
+                               dialog_text='A group with the same name already exists, choose another name')
+
+        # self.group_screen = self.group_name
+        # self.update_data_table()
+        # self.change_screen(self.group_name)
+
     def update_data_table(self, *args):
-        table = self.get_data_table()
+        self.table = self.get_data_table()
         self.layout.clear_widgets()
-        self.layout.add_widget(table)
+        print(f"group screen is ------ {self.group_screen}")
+        print(f"current screen is ------ {self.ids.screen_manager.current}")
+        print(self.table.row_data)
+        self.layout.add_widget(self.table)
         self.create_run_data_buttons()
 
     def get_user_groups(self):
         groups = []
         group_path = self.ref.child('groups').get().keys()
         for group in group_path:
-            if self.user.uid in self.ref.child('groups').child(f"{group}").child("group_users").get().keys():
-                groups.append(group)
+            try:
+                if self.user.uid in self.ref.child('groups').child(f"{group}").child("group users").get().keys():
+                    groups.append(group)
+            except:
+                print('group does not exist')
         return groups
 
-    def get_update_user_data(self, group, *args):
+    def get_update_user_data(self, *args):
         self.address_button = self.ids.address_button.text
         self.avaliable_places_button = self.ids.avaliable_places.text
 
         data_to_set = {
-            f"{self.user.uid}": {
                 "address": self.address_button,
                 "avaliable places": self.avaliable_places_button
             }
-        }
 
-        self.ref.child('groups').child(f'{self.group_screen}').child('users_data').update(data_to_set)
+        self.ref.child('groups').child(f'{self.group_screen}').child('users data').child(f"{self.user.uid}").set(data_to_set)
         self.update_data_table()
         self.change_screen(self.group_screen)
-
-    def get_box_layout(self):
-        bl = BoxLayout(orientation='vertical',
-                       spacing="12dp",
-                       padding="12dp",
-                       size_hint=(1, None),
-                       pos_hint={'top': 1})
-        return bl
 
     def get_user(self):
         return auth.get_user_by_email(self.parent.get_screen('login').ids.login_email.text)
@@ -265,7 +340,7 @@ class MainScreen(Screen):
         pass
 
     def get_group_data(self):
-        group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users_data').get()
+        group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users data').get()
         df_list = []
         for uid in group_path.keys():
             user = auth.get_user(uid)
@@ -295,14 +370,18 @@ class MainScreen(Screen):
         )
         return table
 
-    def dialog_button(self):
-        self.dialog = MDDialog(
-            text="Discard draft?",
-            buttons=[
-                MDFlatButton(text="CANCEL"), MDRaisedButton(text="DISCARD"),
-            ],
-        )
-        return self.dialog.open()
+    def dialog_button(self,
+                      text_button: str,
+                      dialog_title: str,
+                      dialog_text: str):
+
+        cancel_btn_username_dialogue_mail = MDFlatButton(text=text_button,
+                                                         on_release=self.close_username_dialog)
+        self.dialog = MDDialog(title=dialog_title,
+                               text=dialog_text,
+                               size_hint=(0.7, 0.2),
+                               buttons=[cancel_btn_username_dialogue_mail])
+        self.dialog.open()
 
     def close_username_dialog(self, *args):
         self.dialog.dismiss()
@@ -344,7 +423,6 @@ class DrawerList(ThemableBehavior, MDList):
         #       f"thm_prm{self.theme_cls.primary_color}")
 
 
-
 def add_ScreenManager():
     sm = ScreenManager()
     sm.add_widget(HelloScreen(name='hello'))
@@ -366,6 +444,7 @@ class Test(MDApp):
         self.requests_verify_email = requests_verify_email
         self.requests_reset_email = requests_reset_email
         self.requests_delete_account = requests_delete_account
+        self.app = self.get_running_app()
         super().__init__(**kwargs)
 
     def build(self):
@@ -374,6 +453,7 @@ class Test(MDApp):
         self.theme_cls.primary_hue = "300"
         self.theme_cls.accent_palette = "Purple"
         return self.strng
+
 
     def VerifyEmail(self):
         payload = json.dumps({
@@ -405,7 +485,7 @@ class Test(MDApp):
             return r.json()
 
     def SendResetEmail(self):
-        self.resetEmail = self.strng.get_screen('resetpassword').ids.reset.text
+        self.resetEmail = self.strng.get_screen('resetpassword').ids.reset_email.text
         payload = json.dumps({
             "requestType": "PASSWORD_RESET",
             "email": self.resetEmail
@@ -536,3 +616,5 @@ if __name__ == '__main__':
     requests_delete_account = data['General']['requests_delete_account']
 
     Test().run()
+    time.sleep(5)
+    print('ciao')

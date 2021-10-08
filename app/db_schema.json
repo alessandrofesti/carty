@@ -3,14 +3,15 @@
 	{
 		"cappellania": {
 			"admin": {
-				"admin_uid": "Fsn3LAdD2wS2hcHecvA7aEH1Ovy2",
-				"password": 123456
+				"admin uid": "JLK18rSUHpV0SyYMdo8MTz1ftQ13",
+				"password": 123456,
+				"destination address": "via di casaglia 4, Bologna"
 			},
-			"group_users": {
-				"Fsn3LAdD2wS2hcHecvA7aEH1Ovy2": true
+			"group users": {
+				"JLK18rSUHpV0SyYMdo8MTz1ftQ13": true
 			},
-			"users_data": {
-				"Fsn3LAdD2wS2hcHecvA7aEH1Ovy2": {
+			"users data": {
+				"JLK18rSUHpV0SyYMdo8MTz1ftQ13": {
 					"address": "via oslavia 5 Bologna",
 					"avaliable places": 5
 				}

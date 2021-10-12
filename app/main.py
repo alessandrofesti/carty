@@ -151,9 +151,15 @@ class MainScreen(Screen):
         # USAGE
         self.mycallback_scroll()
 
-    # POST ON_ENTER
-    class Use_group():
+    # USAGE
+    def usage_main(self, child):
+        self.group_screen = child.text
+        self.layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
+        self.layout_user = self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').children[0]
+        print(f'current group_screen in {self.group_screen}')
+
     def change_screen_scrollview(self, child):
+        self.usage_main(child=child)
         self.ids.screen_manager.current = child.text
         self.ids.nav_drawer.set_state("close")
 
@@ -162,16 +168,13 @@ class MainScreen(Screen):
             if child.text in self.user_groups:
                 child.bind(on_press=self.change_screen_scrollview)
 
-    def my_callbacK_user_group(self):
-        pass
-
+    # DYNAMIC CONSTRUCTION
     def update_data_table(self, *args):
         self.table = self.get_data_table()
         self.layout.clear_widgets()
         self.layout.add_widget(self.table)
         self.create_run_data_buttons()
 
-    # ON_ENTER
     def add_dynamic_screen(self):
         self.ids.screen_manager.add_widget(
             Screen(name=f"{self.group_screen}"))
@@ -311,8 +314,8 @@ class MainScreen(Screen):
         return groups
 
     def get_update_user_data(self, *args):
-        self.address_button = self.ids.address_button.text
-        self.avaliable_places_button = self.ids.avaliable_places.text
+        self.avaliable_places_button = self.layout_user.children[2].text
+        self.address_button = self.layout_user.children[1].text
 
         data_to_set = {
                 "address": self.address_button,

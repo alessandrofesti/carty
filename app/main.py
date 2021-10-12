@@ -127,6 +127,7 @@ class HelloScreen(Screen):
     def callbackfun(self, dt):
         self.manager.current = 'login'
 
+
 class MainScreen(Screen):
 
     def on_pre_enter(self):
@@ -138,43 +139,50 @@ class MainScreen(Screen):
         self.ids.toolbar.ids.label_title.font_size = 20
         self.user_groups = self.get_user_groups()
 
+        # DYNAMIC CONSTRUCTION
         for group in self.user_groups:
             self.group_screen = group
-            #print(self.group_screen)
             self.add_dynamic_screen()
             self.add_groups_in_scrollview()
             self.create_user_data_layout()
             self.create_group_data_to_layout()
             self.create_run_data_buttons()
 
-        print('debug stop cazzo dio di un dio')
-        self.main_main()
-        # self.ids.screen_manager.screen_names
+        # USAGE
+        self.mycallback_scroll()
 
+    # POST ON_ENTER
+    class Use_group():
+    def change_screen_scrollview(self, child):
+        self.ids.screen_manager.current = child.text
+        self.ids.nav_drawer.set_state("close")
 
-    def main_main(self):
-        #self.group_screen=self.ids.screen_manager.current
+    def mycallback_scroll(self, *args):
+        for child in self.ids.contentnavigationdrawer.ids.container.children:
+            if child.text in self.user_groups:
+                child.bind(on_press=self.change_screen_scrollview)
+
+    def my_callbacK_user_group(self):
         pass
 
+    def update_data_table(self, *args):
+        self.table = self.get_data_table()
+        self.layout.clear_widgets()
+        self.layout.add_widget(self.table)
+        self.create_run_data_buttons()
+
+    # ON_ENTER
     def add_dynamic_screen(self):
         self.ids.screen_manager.add_widget(
             Screen(name=f"{self.group_screen}"))
 
     def add_user_data_screen(self):
         self.ids.screen_manager.add_widget(
-            Screen(name=f'Add user -- {self.group_screen}')
-        )
+            Screen(name=f'Add user -- {self.group_screen}'))
 
     def add_groups_in_scrollview(self):
-        self.ids.contentnavigationdrawer.ids.container.add_widget(
-            OneLineListItem(text=f"{self.group_screen}",
-                            on_press=self.change_screen_scrollview) #lambda x: self.change_screen(f"{self.group_screen}"
-        )
-
-    def change_screen_scrollview(self, *args):
-        self.ids.screen_manager.current = self.group_screen
-        self.ids.nav_drawer.set_state("close")
-
+        onelistitem = OneLineListItem(text=f"{self.group_screen}")
+        self.ids.contentnavigationdrawer.ids.container.add_widget(onelistitem)
 
     def create_user_data_layout(self):
         self.add_user_data_screen()
@@ -230,7 +238,6 @@ class MainScreen(Screen):
 
         self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
         self.table = self.get_data_table()
-        print(self.table.row_data)
         self.layout.add_widget(self.table)
 
     def create_run_data_buttons(self, *args):
@@ -291,15 +298,6 @@ class MainScreen(Screen):
         # self.group_screen = self.group_name
         # self.update_data_table()
         # self.change_screen(self.group_name)
-
-    def update_data_table(self, *args):
-        self.table = self.get_data_table()
-        self.layout.clear_widgets()
-        print(f"group screen is ------ {self.group_screen}")
-        print(f"current screen is ------ {self.ids.screen_manager.current}")
-        print(self.table.row_data)
-        self.layout.add_widget(self.table)
-        self.create_run_data_buttons()
 
     def get_user_groups(self):
         groups = []
@@ -444,7 +442,7 @@ class Test(MDApp):
         self.requests_verify_email = requests_verify_email
         self.requests_reset_email = requests_reset_email
         self.requests_delete_account = requests_delete_account
-        self.app = self.get_running_app()
+        self.app = Test.get_running_app()
         super().__init__(**kwargs)
 
     def build(self):
@@ -616,5 +614,3 @@ if __name__ == '__main__':
     requests_delete_account = data['General']['requests_delete_account']
 
     Test().run()
-    time.sleep(5)
-    print('ciao')

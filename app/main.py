@@ -130,6 +130,7 @@ class HelloScreen(Screen):
 
 class MainScreen(Screen):
 
+    #label_op = ObjectProperty()
     def on_pre_enter(self):
         # Customize toolbar
         self.user = self.get_user()
@@ -176,8 +177,10 @@ class MainScreen(Screen):
         self.create_run_data_buttons()
 
     def add_dynamic_screen(self):
-        self.ids.screen_manager.add_widget(
-            Screen(name=f"{self.group_screen}"))
+        group_screen = Screen(name=f"{self.group_screen}")
+        self.ids.screen_manager.add_widget(group_screen)
+        self.ids.screen_manager.ids[f"{self.group_screen}"] = weakref.ref(group_screen)
+        self.ids.screen_manager.ids
 
     def add_user_data_screen(self):
         self.ids.screen_manager.add_widget(
@@ -290,17 +293,23 @@ class MainScreen(Screen):
 
         if not self.group_name in self.ref.child('groups').get().keys():
             self.ref.child('groups').update(data_to_set)
+            self.remove_screens()
+            self.on_pre_enter()
             self.dialog_button(text_button='OK',
                                dialog_title='Group created',
                                dialog_text='Share the group password with your friends to let them join the group')
+
         else:
             self.dialog_button(text_button='Retry',
                                dialog_title='Group name already exists',
                                dialog_text='A group with the same name already exists, choose another name')
 
-        # self.group_screen = self.group_name
-        # self.update_data_table()
-        # self.change_screen(self.group_name)
+    def remove_screens(self):
+        for screen in self.ids.screen_manager.screen_names:
+            if screen not in ['scr add group', 'screen profile', 'screen join group']:
+                self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(screen))
+        self.ids.nav_drawer.set_state("close")
+
 
     def get_user_groups(self):
         groups = []

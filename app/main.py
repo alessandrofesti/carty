@@ -19,7 +19,7 @@ import weakref
 from kivymd.uix.button import MDRectangleFlatIconButton, MDRectangleFlatButton, MDRaisedButton, MDIconButton
 
 from kivymd.uix.label import MDLabel
-
+import threading
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -48,7 +48,7 @@ from kivymd.uix.dialog import MDDialog
 # buildozer -v android clean
 
 from functions import load_kv
-
+from kivymd.uix.spinner.spinner import MDSpinner
 # callbacks
 # access widgets by ids
 # authentication using fb, google and others
@@ -71,15 +71,17 @@ from firebase_admin import db, auth
 from kivy.metrics import dp
 import pandas as pd
 
+from kivy.clock import mainthread
 from data import input_data
 from kivy.uix.textinput import TextInput
-
+from kivymd.uix.banner.banner import MDBanner
 # festi.alessandro00@gmail.com
 
 
 # TODO:
 #   add password button
 #   unjoin user from group
+#   ottimizzare chiamate DB, farne solo una iniziale (forse): lentezza sono tutte le chiamate al DB
 
 import json
 import pdb
@@ -129,9 +131,13 @@ class HelloScreen(Screen):
 
 
 class MainScreen(Screen):
-
-    #label_op = ObjectProperty()
     def on_pre_enter(self):
+        # TODO: including spinner
+        #self.on_pre_enter_funcs()
+        # x = threading.Thread(target=self.on_pre_enter_funcs, daemon=True).start()
+        # y = threading.Thread(target=self.get_main_spinner, daemon=True)
+        # y.start()
+
         # Customize toolbar
         self.user = self.get_user()
         self.app = Test.get_running_app()
@@ -180,7 +186,6 @@ class MainScreen(Screen):
         group_screen = Screen(name=f"{self.group_screen}")
         self.ids.screen_manager.add_widget(group_screen)
         self.ids.screen_manager.ids[f"{self.group_screen}"] = weakref.ref(group_screen)
-        self.ids.screen_manager.ids
 
     def add_user_data_screen(self):
         self.ids.screen_manager.add_widget(
@@ -241,8 +246,15 @@ class MainScreen(Screen):
         self.layout = BoxLayout(orientation='vertical',
                                 spacing="12dp",
                                 padding="12dp")
-
         self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
+
+        # Add password label
+        pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
+        self.group_pass_join = pass_path['password']
+        self.pass_label = OneLineListItem(text=f"Group password is {self.group_pass_join} -- share it with your friends to let them join the group")
+        self.layout.add_widget(self.pass_label)
+
+        # Add data table
         self.table = self.get_data_table()
         self.layout.add_widget(self.table)
 
@@ -264,6 +276,55 @@ class MainScreen(Screen):
                 pos_hint={'center_x': .5, 'center_y': .5}
             )
         )
+        # Add Run button
+        self.layout.add_widget(
+            MDFillRoundFlatButton(
+                text="Leave group",
+                line_color=(1, 0, 1, 1),
+                pos_hint={'center_x': .5, 'center_y': .5},
+                on_press=lambda x: self.leave_group()
+            )
+        )
+
+    def join_existing_group(self):
+        self.join_group_name = self.ids.join_group_name.text
+        self.join_group_password = self.ids.join_group_password.text
+        join_path = self.ref.child('groups').get()
+
+        if self.join_group_name in join_path.keys():
+            if self.user.uid in join_path[self.join_group_name]['group users'].keys():
+                self.dialog_button(text_button='Retry',
+                                   dialog_title=f'join not succeed',
+                                   dialog_text='user already joined the group')
+            elif self.join_group_password != str(join_path[self.join_group_name]['admin']['password']):
+                self.dialog_button(text_button='Retry',
+                                   dialog_title=f'join not succeed',
+                                   dialog_text='wrong password')
+            else:
+                self.dialog_button(text_button='OK',
+                                   dialog_title=f'join succeed',
+                                   dialog_text=f'Joined group {self.join_group_name}')
+
+                self.ref.child('groups').child(f"{self.join_group_name}").child('group users').update(
+                    {f"{self.user.uid}": True}
+                )
+                self.remove_screens()
+                self.on_pre_enter()
+        else:
+            self.dialog_button(text_button='Retry',
+                               dialog_title=f'join not succeed',
+                               dialog_text=f'{self.join_group_name} does not exists')
+
+    def leave_group(self):
+        self.ref.child('groups').child(self.group_screen).child('group users').child(f'{self.user.uid}').delete()
+        if self.user.uid in self.ref.child('groups').child(self.group_screen).child('users data').get().keys():
+            self.ref.child('groups').child(self.group_screen).child('users data').child(f'{self.user.uid}').delete()
+
+        self.remove_screens()
+        self.on_pre_enter()
+        self.dialog_button(text_button='OK',
+                           dialog_title='Succeed',
+                           dialog_text='Group deleted')
 
     def create_new_group(self):
         self.group_name = self.ids.group_name.text
@@ -305,9 +366,18 @@ class MainScreen(Screen):
                                dialog_text='A group with the same name already exists, choose another name')
 
     def remove_screens(self):
+        keep_groups = ['scr add group', 'screen profile', 'screen join group']
+        keep_scroll_items = ['Profile', 'Join existing group']
         for screen in self.ids.screen_manager.screen_names:
-            if screen not in ['scr add group', 'screen profile', 'screen join group']:
+            if screen not in keep_groups:
                 self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(screen))
+                # TODO: da togliere gli schermi add user
+                #self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(f'Add user -- {screen}'))
+        for i, scroll_element in enumerate(self.ids.contentnavigationdrawer.ids.container.children):
+            if scroll_element.text not in keep_scroll_items:
+                self.ids.contentnavigationdrawer.ids.container.remove_widget(
+                    self.ids.contentnavigationdrawer.ids.container.children[i]
+                )
         self.ids.nav_drawer.set_state("close")
 
 
@@ -319,7 +389,7 @@ class MainScreen(Screen):
                 if self.user.uid in self.ref.child('groups').child(f"{group}").child("group users").get().keys():
                     groups.append(group)
             except:
-                print('group does not exist')
+                print('User not present in this group')
         return groups
 
     def get_update_user_data(self, *args):
@@ -414,6 +484,10 @@ class ForgotPasswordScreen(Screen):
     pass
 
 
+class LoadingScreen(Screen):
+    pass
+
+
 class ItemDrawer(OneLineIconListItem):
     icon = StringProperty()
     text_color = ListProperty((0, 0, 0, 1))
@@ -441,6 +515,7 @@ def add_ScreenManager():
     sm.add_widget(SignupScreen(name='signup'))
     sm.add_widget(InputScreen(name='input'))
     sm.add_widget(ForgotPasswordScreen(name='resetpassword'))
+    sm.add_widget(LoadingScreen(name='loading'))
 
 
 class Test(MDApp):
@@ -589,7 +664,8 @@ class Test(MDApp):
         elif 'idToken' in r.json().keys() and self.user.email_verified:
             self.login_check = True
             self.idToken = r.json()['idToken']
-            self.strng.get_screen('main').manager.current = 'main'
+            #self.strng.get_screen('main').manager.current = 'main'
+            self.root.current = 'main'
 
         else:
             self.dialog_button(text_button='Retry',

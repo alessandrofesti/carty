@@ -34,6 +34,7 @@ ScreenManager:
     SignupScreen:
     InputScreen:
     ForgotPasswordScreen:
+    LoadingScreen:
 
 <HelloScreen>:
     id: hello
@@ -151,21 +152,21 @@ ScreenManager:
             MDScreen:
                 id: screen_profile
                 name: "screen profile"
-                MDLabel:
-                    text: "Screen profile"
-                    halign: "center"
-                MDLabel:
-                    id: label_screen_delete
-                    text: "Delete account"
-                    halign: "center"
-                MDRaisedButton:
-                    id: button_screen_delete
-                    text:'Delete account'
-                    size_hint: (0.13,0.07)
-                    pos_hint: {'center_x':0.5,'center_y':0.8}
-                    on_press:
-                        app.DeleteAccount()
-                        root.manager.current = 'signup'
+                MDFloatLayout:
+                    size: root.width, root.height
+                    canvas.before:
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    MDFillRoundFlatButton:
+                        id: button_screen_delete
+                        text:'Delete account'
+                        pos_hint: {'top': 0.15, 'center_x': 0.5}
+                        size_hint_x: .7
+                        size_hint_y: .05
+                        on_press:
+                            app.DeleteAccount()
+                            root.manager.current = 'signup'
             MDScreen:
                 id: screen_join_group
                 name: "screen join group"
@@ -182,7 +183,7 @@ ScreenManager:
                         text_color: app.theme_cls.primary_color
                         pos_hint: {'top': 0.9, 'center_x': 0.5}
                     MDTextField:
-                        id: add_group_name
+                        id: join_group_name
                         halign: "center"
                         size_hint_x: .6
                         size_hint_y: .1
@@ -192,7 +193,7 @@ ScreenManager:
                         color_mode: 'accent'
                         icon_right: 'account'
                     MDTextField:
-                        id: add_group_password
+                        id: join_group_password
                         halign: "center"
                         size_hint_x: .6
                         size_hint_y: .1
@@ -206,7 +207,7 @@ ScreenManager:
                         size_hint_x: .7
                         size_hint_y: .05
                         text:'Join exixsting group'
-                        on_press: root.create_new_group
+                        on_press: root.join_existing_group()
 
         MDNavigationDrawer:
             type: "standard"
@@ -389,6 +390,34 @@ ScreenManager:
             on_press:
                 root.manager.current = 'login'
                 root.manager.transition.direction = 'up'
+
+<LoadingScreen>:
+    id: loading_screen
+    name: 'loading'
+    MDLabel:
+        id: carty
+        text: 'CARTY'
+        halign: 'center'
+        theme_text_color: 'Custom'
+        text_color: (153,0,153)
+        font_style: 'H1'
+        font_size: sp(50)
+    MDSpinner:
+        id: loading_spinner
+        size_hint: None, None
+        size: dp(46), dp(46)
+        pos_hint: {'center_x': .5, 'center_y': .3}
+        active: True
+    MDLabel:
+        text: 'Optimize your party shifts'
+        pos_hint: {'center_x':0.5,'center_y':0.44}
+        theme_text_color: 'Custom'
+        text_color: (153,0,153)
+        halign: 'center'
+        font_style: 'H1'
+        font_size: sp(15)
+        helper_text_mode: "on_focus"
+
 
 
 

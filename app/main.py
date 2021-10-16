@@ -65,6 +65,7 @@ from kivymd.uix.spinner.spinner import MDSpinner
 # buildozer -v android clean
 # buildozer android debug
 
+from kivy.uix.floatlayout import FloatLayout
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db, auth
@@ -83,6 +84,7 @@ from kivymd.uix.banner.banner import MDBanner
 #   unjoin user from group
 #   ottimizzare chiamate DB, farne solo una iniziale (forse): lentezza sono tutte le chiamate al DB
 
+from  kivy.uix.gridlayout import GridLayout
 import json
 import pdb
 
@@ -161,7 +163,10 @@ class MainScreen(Screen):
     # USAGE
     def usage_main(self, child):
         self.group_screen = child.text
-        self.layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
+        self.general_layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
+        # TODO: guarda sotto
+        #self.layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
+        #self.layout_buttons = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[1]
         self.layout_user = self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').children[0]
         print(f'current group_screen in {self.group_screen}')
 
@@ -243,15 +248,17 @@ class MainScreen(Screen):
         self.ids['add_data_button'] = weakref.ref(add_data_button)
 
     def create_group_data_to_layout(self):
-        self.layout = BoxLayout(orientation='vertical',
-                                spacing="12dp",
-                                padding="12dp")
-        self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
+        self.layout = MDFloatLayout(
+            size=(self.width,
+                  self.height)
+        )
 
         # Add password label
         pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
         self.group_pass_join = pass_path['password']
-        self.pass_label = OneLineListItem(text=f"Group password is {self.group_pass_join} -- share it with your friends to let them join the group")
+        self.pass_label = OneLineListItem(text=f"Group password is {self.group_pass_join} -- share it with your friends to let them join the group",
+                                          pos_hint={'top': 1, 'center_x': 0.5}
+                                          )
         self.layout.add_widget(self.pass_label)
 
         # Add data table
@@ -262,9 +269,8 @@ class MainScreen(Screen):
         self.layout.add_widget(
             MDFillRoundFlatButton(
                 text="Add your data",
-                size=(0.7, 0.05),
                 line_color=(1, 0, 1, 1),
-                pos_hint={'center_x': .5, 'center_y': .5},
+                pos_hint={'top': 0.1, 'center_x': 0.3},
                 on_press=lambda x: self.change_screen(f'Add user -- {self.group_screen}')
             )
         )
@@ -273,7 +279,8 @@ class MainScreen(Screen):
             MDFillRoundFlatButton(
                 text="Run simulation",
                 line_color=(1, 0, 1, 1),
-                pos_hint={'center_x': .5, 'center_y': .5}
+                pos_hint={'top': 0.1, 'center_x': 0.5},
+                #pos_hint={'center_x': .5, 'center_y': .5}
             )
         )
         # Add Run button
@@ -281,10 +288,17 @@ class MainScreen(Screen):
             MDFillRoundFlatButton(
                 text="Leave group",
                 line_color=(1, 0, 1, 1),
-                pos_hint={'center_x': .5, 'center_y': .5},
+                pos_hint={'top': 0.1, 'center_x': 0.7},
+                #pos_hint={'center_x': .5, 'center_y': .5},
                 on_press=lambda x: self.leave_group()
             )
         )
+
+        self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
+        #self.layout.add_widget(self.layout_buttons)
+        #self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0].pos = [150, -130]
+        #self.general_layout.add_widget(self.layout)
+        # self.general_layout.add_widget(self.layout_buttons)
 
     def join_existing_group(self):
         self.join_group_name = self.ids.join_group_name.text
@@ -444,9 +458,10 @@ class MainScreen(Screen):
         table = MDDataTable(
             column_data=column_data,
             row_data=row_data,
-            #check=True,
+            check=True,
             use_pagination=True,
-            rows_num=len(df_group)+3
+            rows_num=len(df_group)+3,
+            pos_hint={'top': 0.9, 'center_x': 0.5}
         )
         return table
 

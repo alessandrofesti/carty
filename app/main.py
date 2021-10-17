@@ -256,10 +256,13 @@ class MainScreen(Screen):
         # Add password label
         pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
         self.group_pass_join = pass_path['password']
+        self.destination_address = pass_path['destination address']
         self.pass_label = OneLineListItem(text=f"Group password is {self.group_pass_join} -- share it with your friends to let them join the group",
-                                          pos_hint={'top': 1, 'center_x': 0.5}
-                                          )
+                                          pos_hint={'top': 1, 'center_x': 0})
+        self.dest_label = OneLineListItem(text=f"Group destination is {self.destination_address}",
+                                          pos_hint={'top': 0.9, 'center_x': 0})
         self.layout.add_widget(self.pass_label)
+        self.layout.add_widget(self.dest_label)
 
         # Add data table
         self.table = self.get_data_table()

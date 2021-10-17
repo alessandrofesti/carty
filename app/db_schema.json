@@ -11,6 +11,10 @@
 				"JLK18rSUHpV0SyYMdo8MTz1ftQ13": true
 			},
 			"users data": {
+				"admin": {
+					"address": "casa",
+					"avaliable_places": 0
+				},
 				"JLK18rSUHpV0SyYMdo8MTz1ftQ13": {
 					"address": "via oslavia 5 Bologna",
 					"avaliable places": 5

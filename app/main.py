@@ -83,6 +83,7 @@ from kivymd.uix.banner.banner import MDBanner
 #   add password button
 #   unjoin user from group
 #   ottimizzare chiamate DB, farne solo una iniziale (forse): lentezza sono tutte le chiamate al DB
+#   Se delete account cancellare user da tutti i gruppi
 
 from  kivy.uix.gridlayout import GridLayout
 import json
@@ -103,13 +104,7 @@ ref = db.reference('/')
 
 # debugger carino https://kivy.org/doc/stable/api-kivy.modules.webdebugger.html
 
-# for i in self.ids.screen_manager.get_screen('www').children:
-#     for j in i.children:
-#         print(j)
-#         try:
-#             print(j.row_data)
-#         except:
-#             print('no data table')
+
 
 import time
 
@@ -159,6 +154,7 @@ class MainScreen(Screen):
 
         # USAGE
         self.mycallback_scroll()
+        self.add_delete_account_in_scrollview()
 
     # USAGE
     def usage_main(self, child):
@@ -180,10 +176,17 @@ class MainScreen(Screen):
             if child.text in self.user_groups:
                 child.bind(on_press=self.change_screen_scrollview)
 
+    def add_delete_account_in_scrollview(self):
+        self.ids.contentnavigationdrawer.ids.container.add_widget(
+            OneLineListItem(text="Delete Account",
+                            on_press=self.app.DeleteAccount)
+        )
+
     # DYNAMIC CONSTRUCTION
     def update_data_table(self, *args):
         self.table = self.get_data_table()
         self.layout.clear_widgets()
+        self.create_info_onelinelistitems()
         self.layout.add_widget(self.table)
         self.create_run_data_buttons()
 
@@ -211,7 +214,6 @@ class MainScreen(Screen):
             icon="dice-multiple",
             user_font_size=40,
             theme_text_color="Custom",
-            # text_color=app.theme_cls.primary_color
             pos_hint={'top': 0.9, 'center_x': 0.5}
         )
         self.layout_user.add_widget(dice_icon)
@@ -252,21 +254,27 @@ class MainScreen(Screen):
             size=(self.width,
                   self.height)
         )
-
-        # Add password label
-        pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
-        self.group_pass_join = pass_path['password']
-        self.destination_address = pass_path['destination address']
-        self.pass_label = OneLineListItem(text=f"Group password is {self.group_pass_join} -- share it with your friends to let them join the group",
-                                          pos_hint={'top': 1, 'center_x': 0})
-        self.dest_label = OneLineListItem(text=f"Group destination is {self.destination_address}",
-                                          pos_hint={'top': 0.9, 'center_x': 0})
-        self.layout.add_widget(self.pass_label)
-        self.layout.add_widget(self.dest_label)
+        self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
+        # Add listitems data
+        self.create_info_onelinelistitems()
 
         # Add data table
         self.table = self.get_data_table()
         self.layout.add_widget(self.table)
+
+    def create_info_onelinelistitems(self):
+        # Add password and destination labels
+        self.pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
+        self.group_pass_join = self.pass_path['password']
+        self.destination_address = self.pass_path['destination address']
+
+        self.pass_label = OneLineListItem(text=f"Group password: [b]{self.group_pass_join}[/b]",
+                                          pos_hint={'top': 1, 'center_x': 0.5})
+        self.dest_label = OneLineListItem(text=f"Group destination: [b]{self.destination_address}[/b]",
+                                          pos_hint={'top': 0.9, 'center_x': 0.5})
+
+        self.layout.add_widget(self.pass_label, index=0)
+        self.layout.add_widget(self.dest_label, index=0)
 
     def create_run_data_buttons(self, *args):
         self.layout.add_widget(
@@ -297,11 +305,7 @@ class MainScreen(Screen):
             )
         )
 
-        self.ids.screen_manager.get_screen(f'{self.group_screen}').add_widget(self.layout)
-        #self.layout.add_widget(self.layout_buttons)
-        #self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0].pos = [150, -130]
-        #self.general_layout.add_widget(self.layout)
-        # self.general_layout.add_widget(self.layout_buttons)
+
 
     def join_existing_group(self):
         self.join_group_name = self.ids.join_group_name.text
@@ -361,6 +365,10 @@ class MainScreen(Screen):
                     f"{self.user.uid}": True
                 },
                 "users data": {
+                    "admin": {
+                        "address": "casa",
+                        "avaliable places": 0
+                    },
                     f"{self.user.uid}": {
                         "address": self.user_departure_address,
                         "avaliable places": self.user_n_avaliable_places #TODO: check toint
@@ -440,14 +448,15 @@ class MainScreen(Screen):
         group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users data').get()
         df_list = []
         for uid in group_path.keys():
-            user = auth.get_user(uid)
-            username = user.display_name
-            dict_grpup = group_path[uid]
-            dict_grpup.update({
-                "user": username
-            })
-            df = pd.DataFrame.from_dict(dict_grpup, orient='index')
-            df_list.append(df)
+            if uid != "admin":
+                user = auth.get_user(uid)
+                username = user.display_name
+                dict_grpup = group_path[uid]
+                dict_grpup.update({
+                    "user": username
+                })
+                df = pd.DataFrame.from_dict(dict_grpup, orient='index')
+                df_list.append(df)
 
         df_group = pd.concat(df_list, axis=1).T.reset_index(drop=True)
         df_group = df_group[['user', "address", "avaliable places"]]
@@ -464,7 +473,7 @@ class MainScreen(Screen):
             check=True,
             use_pagination=True,
             rows_num=len(df_group)+3,
-            pos_hint={'top': 0.9, 'center_x': 0.5}
+            pos_hint={'top': 0.8, 'center_x': 0.5}
         )
         return table
 
@@ -571,7 +580,7 @@ class Test(MDApp):
         else:
             return r.json()
 
-    def DeleteAccount(self):
+    def DeleteAccount(self, *args):
         payload = json.dumps({
             "idToken": self.idToken
         })
@@ -584,7 +593,8 @@ class Test(MDApp):
             self.dialog_button(text_button='OK',
                                dialog_title='Account deleted',
                                dialog_text=f'Adieu')
-            self.dialog.open()
+            #self.dialog.open()
+            self.root.current = 'login'
             return r.json()
 
     def SendResetEmail(self):

@@ -24,12 +24,11 @@ from data import input_data
 
 
 
-# --- Get lat and lon from address --- #
+
 def get_latlon_fromaddress(address):
         geolocator = Nominatim(user_agent="Your_Name")
         location = geolocator.geocode(address)
         latlon = [location.latitude, location.longitude]
-
         return latlon
 
 
@@ -110,10 +109,6 @@ def print_solution(data, manager, routing, solution):
     return shifts
 
 
-def recompose():
-    pass
-
-
 def main(distance_matrix):
     """Entry point of the program."""
     # Instantiate the data problem.
@@ -189,24 +184,14 @@ def main(distance_matrix):
     return shifts
 
 
-def get_final_df(input_data, shifts):
-
-    df_input_data = pd.DataFrame(input_data)
-    df_shifts = pd.DataFrame(shifts)
-    df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
-
-    # merge ....
-
-    return None
-
-
 if __name__=='__main__':
 
     coordinates = get_latlon_fromaddress(address='via oslavia 5 bologna')
+    print(coordinates)
     distance_matrix = get_distance_matrix(input_data)
-    print(distance_matrix)
-
     shifts = main(distance_matrix)
+    df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
+    print(df_shifts)
 
 
 

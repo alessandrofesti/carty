@@ -84,10 +84,15 @@ from kivymd.uix.banner.banner import MDBanner
 #   unjoin user from group
 #   ottimizzare chiamate DB, farne solo una iniziale (forse): lentezza sono tutte le chiamate al DB
 #   Se delete account cancellare user da tutti i gruppi
+#   Da aggiungere il check in data_table
+#   Quando delete bisogna cancellare l'user da tutti i gruppi
 
 from  kivy.uix.gridlayout import GridLayout
 import json
 import pdb
+
+import model
+from model import get_distance_matrix, main
 
 if not firebase_admin._apps:
     cred = credentials.Certificate("./carty-7373e-firebase-adminsdk-vuzij-94930417b9.json")
@@ -154,6 +159,7 @@ class MainScreen(Screen):
 
         # USAGE
         self.mycallback_scroll()
+        self.add_logout_in_scrollview()
         self.add_delete_account_in_scrollview()
 
     # USAGE
@@ -175,6 +181,16 @@ class MainScreen(Screen):
         for child in self.ids.contentnavigationdrawer.ids.container.children:
             if child.text in self.user_groups:
                 child.bind(on_press=self.change_screen_scrollview)
+
+    def add_logout_in_scrollview(self):
+        self.ids.contentnavigationdrawer.ids.container.add_widget(
+            OneLineListItem(text="Logout",
+                            on_press=self.get_login_screen)
+        )
+
+    def get_login_screen(self, *args):
+        self.remove_screens()
+        self.manager.current = 'login'
 
     def add_delete_account_in_scrollview(self):
         self.ids.contentnavigationdrawer.ids.container.add_widget(
@@ -260,6 +276,7 @@ class MainScreen(Screen):
 
         # Add data table
         self.table = self.get_data_table()
+        self.table.bind(on_row_press=self.on_row_press)
         self.layout.add_widget(self.table)
 
     def create_info_onelinelistitems(self):
@@ -291,7 +308,7 @@ class MainScreen(Screen):
                 text="Run simulation",
                 line_color=(1, 0, 1, 1),
                 pos_hint={'top': 0.1, 'center_x': 0.5},
-                #pos_hint={'center_x': .5, 'center_y': .5}
+                on_press=self.run_simulation
             )
         )
         # Add Run button
@@ -300,12 +317,40 @@ class MainScreen(Screen):
                 text="Leave group",
                 line_color=(1, 0, 1, 1),
                 pos_hint={'top': 0.1, 'center_x': 0.7},
-                #pos_hint={'center_x': .5, 'center_y': .5},
-                on_press=lambda x: self.leave_group()
+                on_press=lambda x: self.leave_group
             )
         )
 
+    def run_simulation(self, *args):
+        #distance_matrix = get_distance_matrix(self.table)
+        self.get_run_datatable()
 
+    def get_run_datatable(self):
+        if len(self.table.row_data) > 0:
+            lists = []
+            df_cols = [i[0] for i in self.table.column_data]
+            for row in self.table.row_data:
+                lists.append(list(row))
+            df_tot = pd.DataFrame(lists, columns=df_cols)
+
+            input_data = {
+                "Name": list(df_tot.user),
+                "demands": [1 if ap == 0 else 0 for ap in df_tot['avaliable places']],
+                "free_places": list(df_tot['avaliable places']),
+                "address": list(df_tot['address'])
+            }
+
+        else:
+            input_data = {}
+            self.dialog_button(text_button='Retry',
+                               dialog_title=f'Run not possible',
+                               dialog_text='add data to run the model')
+
+        # Run model
+        distance_matrix = model.get_distance_matrix(input_data)
+        shifts = model.main(distance_matrix)
+        df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
+        print(df_shifts)
 
     def join_existing_group(self):
         self.join_group_name = self.ids.join_group_name.text
@@ -392,17 +437,18 @@ class MainScreen(Screen):
 
     def remove_screens(self):
         keep_groups = ['scr add group', 'screen profile', 'screen join group']
-        keep_scroll_items = ['Profile', 'Join existing group']
+        # Drop dynaically created screens
         for screen in self.ids.screen_manager.screen_names:
             if screen not in keep_groups:
                 self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(screen))
-                # TODO: da togliere gli schermi add user
-                #self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(f'Add user -- {screen}'))
+        # Drop dynaically created lists in scrollview
+        keep_scroll_items = ['Profile', 'Join existing group']
+        widgets_toremove = []
         for i, scroll_element in enumerate(self.ids.contentnavigationdrawer.ids.container.children):
             if scroll_element.text not in keep_scroll_items:
-                self.ids.contentnavigationdrawer.ids.container.remove_widget(
-                    self.ids.contentnavigationdrawer.ids.container.children[i]
-                )
+                widgets_toremove.append(scroll_element)
+
+        self.ids.contentnavigationdrawer.ids.container.clear_widgets(widgets_toremove)
         self.ids.nav_drawer.set_state("close")
 
 
@@ -441,17 +487,14 @@ class MainScreen(Screen):
         self.ids.screen_manager.current = scrren_name
         self.ids.nav_drawer.set_state("close")
 
-    def add_user_button(self):
-        pass
-
     def get_group_data(self):
         group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users data').get()
         df_list = []
         for uid in group_path.keys():
             if uid != "admin":
-                user = auth.get_user(uid)
+                user = auth.get_user(self.user.uid)
                 username = user.display_name
-                dict_grpup = group_path[uid]
+                dict_grpup = group_path[self.user.uid]
                 dict_grpup.update({
                     "user": username
                 })
@@ -476,6 +519,10 @@ class MainScreen(Screen):
             pos_hint={'top': 0.8, 'center_x': 0.5}
         )
         return table
+
+    def on_row_press(self, instance_table, instance_row):
+        '''Called when a table row is clicked.'''
+        print(instance_table, instance_row)
 
     def dialog_button(self,
                       text_button: str,
@@ -593,7 +640,6 @@ class Test(MDApp):
             self.dialog_button(text_button='OK',
                                dialog_title='Account deleted',
                                dialog_text=f'Adieu')
-            #self.dialog.open()
             self.root.current = 'login'
             return r.json()
 

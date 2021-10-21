@@ -1,17 +1,3 @@
-import pandas as pd
-import numpy as np
-import googlemaps
-
-from geopy.geocoders import Nominatim
-from geopy.distance import geodesic
-from itertools import product
-
-from ortools.sat.python import cp_model
-from itertools import chain
-import os
-from IPython import display
-from pandas import read_excel
-
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 from itertools import product
@@ -21,8 +7,6 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
 from data import input_data
-
-
 
 
 def get_latlon_fromaddress(address):

@@ -1,36 +1,16 @@
-import os
-
-from kivy.lang import Builder
-
 from kivy.clock import Clock
-from kivymd.app import MDApp
-from kivymd.uix.menu import MDDropdownMenu
-from kivymd.uix.snackbar import Snackbar
+
 from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton
-from kivymd.uix.boxlayout import BoxLayout
-from kivy.core.window import Window
-from kivy.properties import ObjectProperty, NumericProperty
-from validate_email import validate_email
-from kivymd.uix.dialog import MDDialog
-from kivy.core.window import Window
-from kivy.app import App
+
+from kivy.properties import ObjectProperty
 from kivymd.uix.textfield import MDTextField
 import weakref
-from kivymd.uix.button import MDRectangleFlatIconButton, MDRectangleFlatButton, MDRaisedButton, MDIconButton
+from kivymd.uix.button import MDIconButton
 
-from kivymd.uix.label import MDLabel
-import threading
-from kivy.lang import Builder
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.properties import StringProperty, ListProperty
 
-from kivymd.app import MDApp
 from kivymd.theming import ThemableBehavior
 from kivymd.uix.list import OneLineIconListItem, MDList
-from kivy.uix.screenmanager import ScreenManager, Screen
-
-from kivy.lang import Builder
 
 from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -48,7 +28,7 @@ from kivymd.uix.dialog import MDDialog
 # buildozer -v android clean
 
 from functions import load_kv
-from kivymd.uix.spinner.spinner import MDSpinner
+
 # callbacks
 # access widgets by ids
 # authentication using fb, google and others
@@ -65,18 +45,11 @@ from kivymd.uix.spinner.spinner import MDSpinner
 # buildozer -v android clean
 # buildozer android debug
 
-from kivy.uix.floatlayout import FloatLayout
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db, auth
 from kivy.metrics import dp
 import pandas as pd
-
-from kivy.clock import mainthread
-from data import input_data
-from kivy.uix.textinput import TextInput
-from kivymd.uix.banner.banner import MDBanner
-# festi.alessandro00@gmail.com
 
 
 # TODO:
@@ -87,6 +60,7 @@ from kivymd.uix.banner.banner import MDBanner
 #   Forgot password? check che utente sia reinserito in tutti i gruppi
 #   Da aggiungere il check in data_table
 #   Quando delete bisogna cancellare l'user da tutti i gruppi
+#   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
 
 from  kivy.uix.gridlayout import GridLayout
 import json
@@ -167,6 +141,7 @@ class MainScreen(Screen):
     # USAGE
     def usage_main(self, child):
         self.group_screen = child.text
+        self.table = self.get_data_table()
         self.general_layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
         # TODO: guarda sotto
         #self.layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
@@ -208,16 +183,16 @@ class MainScreen(Screen):
                            dialog_text='If you delete your account you will loose all your data',
                            action_button2='self.delete_account_and_data')
 
-    def delete_account_and_data(self):
+    def delete_account_and_data(self, *args):
         self.cancel_user_data_from_group_in_db(group_list=self.user_groups)
         self.remove_screens()
-        self.app.DeleteAccount()
         self.dialog_button(two_alternatives=False,
                            text_button='OK',
                            text_button2="",
                            dialog_title='Profile deleted',
                            dialog_text="So sad you're leaving :( ",
                            action_button2='')
+        self.app.DeleteAccount()
 
     # DYNAMIC CONSTRUCTION
     def update_data_table(self, *args):
@@ -300,12 +275,14 @@ class MainScreen(Screen):
         self.table.bind(on_row_press=self.on_row_press)
         self.layout.add_widget(self.table)
 
-    def create_info_onelinelistitems(self):
-        # Add password and destination labels
+    def get_info_group(self):
         self.pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
         self.group_pass_join = self.pass_path['password']
         self.destination_address = self.pass_path['destination address']
 
+    def create_info_onelinelistitems(self):
+        self.get_info_group()
+        # Add password and destination labels
         self.pass_label = OneLineListItem(text=f"Group password: [b]{self.group_pass_join}[/b]",
                                           pos_hint={'top': 1, 'center_x': 0.5})
         self.dest_label = OneLineListItem(text=f"Group destination: [b]{self.destination_address}[/b]",
@@ -343,37 +320,59 @@ class MainScreen(Screen):
         )
 
     def run_simulation(self, *args):
-        #distance_matrix = get_distance_matrix(self.table)
         self.get_run_datatable()
 
-    def get_run_datatable(self):
+    def df_to_datatable(self):
+        pass
+
+    def datatable_to_df(self):
+        df_cols = [i[0] for i in self.table.column_data]
         if len(self.table.row_data) > 0:
             lists = []
-            df_cols = [i[0] for i in self.table.column_data]
             for row in self.table.row_data:
                 lists.append(list(row))
             df_tot = pd.DataFrame(lists, columns=df_cols)
+        else:
+            df_tot = pd.DataFrame(columns=df_cols)
 
+        return df_tot
+
+    def get_run_datatable(self):
+        self.df_run_simulation = self.datatable_to_df()
+        self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
+
+        if len(self.df_run_simulation) > 0:
+            # Get input data
             input_data = {
-                "Name": list(df_tot.user),
-                "demands": [1 if ap == 0 else 0 for ap in df_tot['avaliable places']],
-                "free_places": list(df_tot['avaliable places']),
-                "address": list(df_tot['address'])
+                "Name": list(self.df_run_simulation.user),
+                "demands": [1 if ap == 0 else 0 for ap in self.df_run_simulation['avaliable places']],
+                "free_places": list(self.df_run_simulation['avaliable places']),
+                "address": list(self.df_run_simulation['address'])
             }
+
+            # Update info with destination data
+            self.get_info_group()
+            input_data['Name'].append('destination')
+            input_data['demands'].append(1)
+            input_data['free_places'].append(0)
+            input_data['address'].append(self.destination_address)
+
+            # Run model
+            distance_matrix = model.get_distance_matrix(input_data)
+            shifts = model.main(distance_matrix)
+            df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
+            print(df_shifts)
 
         else:
             input_data = {}
-            self.dialog_button(text_button='Retry',
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
                                dialog_title=f'Run not possible',
-                               dialog_text='add data to run the model')
+                               dialog_text='add data to run the model',
+                               action_button2='')
 
-        # Run model
-        distance_matrix = model.get_distance_matrix(input_data)
-        shifts = model.main(distance_matrix)
-        df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
-        print(df_shifts)
-
-    def join_existing_group(self):
+    def join_existing_group(self, *args):
         self.join_group_name = self.ids.join_group_name.text
         self.join_group_password = self.ids.join_group_password.text
         join_path = self.ref.child('groups').get()
@@ -404,8 +403,10 @@ class MainScreen(Screen):
                 self.ref.child('groups').child(f"{self.join_group_name}").child('group users').update(
                     {f"{self.user.uid}": True}
                 )
+
                 self.remove_screens()
                 self.on_pre_enter()
+                self.update_user_groups()
         else:
             self.dialog_button(two_alternatives=False,
                                text_button='Retry',
@@ -416,12 +417,13 @@ class MainScreen(Screen):
 
     def cancel_user_data_from_group_in_db(self, group_list: list):
         for group in group_list:
-            self.ref.child('groups').child(eval(group)).child('group users').child(f'{self.user.uid}').delete()
-            if self.user.uid in self.ref.child('groups').child(eval(group)).child('users data').get().keys():
-                self.ref.child('groups').child(eval(group)).child('users data').child(f'{self.user.uid}').delete()
+            self.ref.child('groups').child(group).child('group users').child(f'{self.user.uid}').delete()
+            if self.user.uid in self.ref.child('groups').child(group).child('users data').get().keys():
+                self.ref.child('groups').child(group).child('users data').child(f'{self.user.uid}').delete()
 
     def leave_group(self, *args):
-        self.cancel_user_data_from_group_in_db(group_list=['self.group_screen'])
+
+        self.cancel_user_data_from_group_in_db(group_list=[self.group_screen])
         self.remove_screens()
         self.on_pre_enter()
         self.dialog_button(two_alternatives=False,
@@ -475,16 +477,17 @@ class MainScreen(Screen):
                                dialog_text='Share the group password with your friends to let them join the group',
                                action_button2='')
 
+            self.update_user_groups()
         else:
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Group name already exists',
-                               dialog_text='A group with the same name already exists, choose another name')
             self.dialog_button(two_alternatives=False,
                                text_button='Retry',
                                text_button2='',
                                dialog_title='Group name already exists',
                                dialog_text='A group with the same name already exists, choose another name',
                                action_button2='')
+
+    def update_user_groups(self):
+        self.user_groups = self.get_user_groups()
 
     def remove_screens(self):
         keep_groups = ['scr add group', 'screen profile', 'screen join group']
@@ -553,8 +556,12 @@ class MainScreen(Screen):
                 df = pd.DataFrame.from_dict(dict_grpup, orient='index')
                 df_list.append(df)
 
-        df_group = pd.concat(df_list, axis=1).T.reset_index(drop=True)
-        df_group = df_group[['user', "address", "avaliable places"]]
+        try:
+            df_group = pd.concat(df_list, axis=1).T.reset_index(drop=True)
+            df_group = df_group[['user', "address", "avaliable places"]]
+        except:
+            df_group = pd.DataFrame(columns=['user', "address", "avaliable places"])
+
         return df_group
 
     def get_data_table(self):
@@ -585,26 +592,28 @@ class MainScreen(Screen):
                       action_button2: str):
 
         if two_alternatives is True:
-            self.dialog = MDDialog(title=dialog_title,
-                                   text=dialog_text,
-                                   buttons=[MDFlatButton(text=text_button,
-                                                         on_release=self.close_username_dialog),
-                                            MDFlatButton(text=text_button2,
-                                                         on_release=eval(action_button2))
-                                            ]
-                                   )
-            self.dialog.open()
+            if not self.dialog:
+                self.dialog = MDDialog(title=dialog_title,
+                                       text=dialog_text,
+                                       buttons=[MDFlatButton(text=text_button,
+                                                             on_release=self.close_username_dialog),
+                                                MDFlatButton(text=text_button2,
+                                                             on_release=eval(action_button2))
+                                                ]
+                                       )
+                self.dialog.open()
         else:
-            self.dialog = MDDialog(title=dialog_title,
-                                   text=dialog_text,
-                                   buttons=[MDFlatButton(text=text_button,
-                                                         on_release=self.close_username_dialog)
-                                            ]
-                                   )
-            self.dialog.open()
+            if not self.dialog:
+                self.dialog = MDDialog(title=dialog_title,
+                                       text=dialog_text,
+                                       buttons=[MDFlatButton(text=text_button,
+                                                             on_release=self.close_username_dialog)
+                                                ]
+                                       )
+                self.dialog.open()
 
     def close_username_dialog(self, *args):
-        self.dialog.dismiss()
+        self.dialog.dismiss(force=True)
 
 
 
@@ -701,13 +710,15 @@ class Test(MDApp):
                           params={"key": self.web_apk},
                           data=payload)
         if 'error' in r.json().keys():
-            return {'status': 'error', 'message': r.json()['error']['message']}
+            error_dict = {'status': 'error', 'message': r.json()['error']['message']}
+            self.dialog_button(two_alternatives=False,
+                               text_button='OK',
+                               text_button2='',
+                               dialog_title=error_dict['status'],
+                               dialog_text=error_dict['message'],
+                               action_button2='')
         else:
-            self.dialog_button(text_button='OK',
-                               dialog_title='Account deleted',
-                               dialog_text=f'Adieu')
             self.root.current = 'login'
-            return r.json()
 
     def SendResetEmail(self):
         self.resetEmail = self.strng.get_screen('resetpassword').ids.reset_email.text
@@ -721,10 +732,12 @@ class Test(MDApp):
         if 'error' in r.json().keys():
             return {'status': 'error', 'message': r.json()['error']['message']}
         else:
-            self.dialog_button(text_button='OK',
-                               dialog_title='Reset email',
-                               dialog_text=f'Email sent to {self.resetEmail}')
-            #self.dialog.open()
+            self.dialog_button(two_alternatives=False,
+                               text_button='OK',
+                               text_button2='',
+                               dialog_title="Reset email",
+                               dialog_text=f"Email sent to {self.resetEmail}",
+                               action_button2='')
             return r.json()
 
     add_ScreenManager()
@@ -737,14 +750,22 @@ class Test(MDApp):
         if (len(self.signupEmail.split()) == 0
                 or len(self.signupPassword.split()) == 0
                 or len(self.signupUsername.split()) == 0):
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Invalid input',
-                               dialog_text='Please Enter a valid Input')
+
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title="Invalid input",
+                               dialog_text='Please Enter a valid Input',
+                               action_button2='')
 
         elif len(self.signupUsername.split()) > 1:
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Invalid Username',
-                               dialog_text='Please enter username without space')
+
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title="Invalid Username",
+                               dialog_text='Please enter username without space',
+                               action_button2='')
 
         else:
             print(self.signupEmail, self.signupUsername, self.signupPassword)
@@ -758,16 +779,22 @@ class Test(MDApp):
                               data=details)
 
             if 'error' in r.json().keys():
-                self.dialog_button(text_button='Retry',
-                                   dialog_title='Error',
-                                   dialog_text=f'{r.json()["error"]["message"]}')
+                self.dialog_button(two_alternatives=False,
+                                   text_button='Retry',
+                                   text_button2='',
+                                   dialog_title="Error",
+                                   dialog_text=f'{r.json()["error"]["message"]}',
+                                   action_button2='')
 
             if 'idToken' in r.json().keys():
                 self.idToken = r.json()['idToken']
                 self.VerifyEmail()
-                self.dialog_button(text_button='OK',
-                                   dialog_title='Weeeee',
-                                   dialog_text=f'We sent you a verification email')
+                self.dialog_button(two_alternatives=False,
+                                   text_button='OK',
+                                   text_button2='',
+                                   dialog_title="Succeed",
+                                   dialog_text='We sent you a verification email',
+                                   action_button2='')
                 self.strng.get_screen('login').manager.current = 'login'
 
     def login(self):
@@ -778,9 +805,12 @@ class Test(MDApp):
         try:
             self.user = auth.get_user_by_email(self.loginEmail)
         except:
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Error',
-                               dialog_text='email not recognized')
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title="Error",
+                               dialog_text='Email not recognized',
+                               action_button2='')
 
         details = {
             'email': self.loginEmail,
@@ -792,14 +822,20 @@ class Test(MDApp):
                           data=details)
 
         if 'error' in r.json().keys():
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Error',
-                               dialog_text=f'{r.json()["error"]["message"]}')
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title="Error",
+                               dialog_text=f'{r.json()["error"]["message"]}',
+                               action_button2='')
 
         elif 'idToken' in r.json().keys() and not self.user.email_verified:
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Error',
-                               dialog_text='Your email has not been verified')
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title="Error",
+                               dialog_text='Your email has not been verified',
+                               action_button2='')
 
         elif 'idToken' in r.json().keys() and self.user.email_verified:
             self.login_check = True
@@ -808,22 +844,40 @@ class Test(MDApp):
             self.root.current = 'main'
 
         else:
-            self.dialog_button(text_button='Retry',
-                               dialog_title='Error',
-                               dialog_text='Unknown error')
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title="Error",
+                               dialog_text='Unknown error',
+                               action_button2='')
 
     def dialog_button(self,
+                      two_alternatives: bool,
                       text_button: str,
+                      text_button2: str,
                       dialog_title: str,
-                      dialog_text: str):
+                      dialog_text: str,
+                      action_button2: str):
 
-        cancel_btn_username_dialogue_mail = MDFlatButton(text=text_button,
+        if two_alternatives is True:
+            self.dialog = MDDialog(title=dialog_title,
+                                   text=dialog_text,
+                                   buttons=[MDFlatButton(text=text_button,
+                                                         on_release=self.close_username_dialog),
+                                            MDFlatButton(text=text_button2,
+                                                         on_release=eval(action_button2))
+                                            ]
+                                   )
+            self.dialog.open()
+        else:
+            self.dialog = MDDialog(title=dialog_title,
+                                   text=dialog_text,
+                                   buttons=[MDFlatButton(text=text_button,
                                                          on_release=self.close_username_dialog)
-        self.dialog = MDDialog(title=dialog_title,
-                               text=dialog_text,
-                               size_hint=(0.7, 0.2),
-                               buttons=[cancel_btn_username_dialogue_mail])
-        self.dialog.open()
+                                            ]
+                                   )
+            self.dialog.open()
+
 
     def close_username_dialog(self, *args):
         self.dialog.dismiss()

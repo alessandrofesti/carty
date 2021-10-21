@@ -84,6 +84,7 @@ from kivymd.uix.banner.banner import MDBanner
 #   unjoin user from group
 #   ottimizzare chiamate DB, farne solo una iniziale (forse): lentezza sono tutte le chiamate al DB
 #   Se delete account cancellare user da tutti i gruppi
+#   Forgot password? check che utente sia reinserito in tutti i gruppi
 #   Da aggiungere il check in data_table
 #   Quando delete bisogna cancellare l'user da tutti i gruppi
 
@@ -147,6 +148,7 @@ class MainScreen(Screen):
         self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 20
         self.user_groups = self.get_user_groups()
+        self.dialog = None
 
         # DYNAMIC CONSTRUCTION
         for group in self.user_groups:
@@ -195,8 +197,24 @@ class MainScreen(Screen):
     def add_delete_account_in_scrollview(self):
         self.ids.contentnavigationdrawer.ids.container.add_widget(
             OneLineListItem(text="Delete Account",
-                            on_press=self.app.DeleteAccount)
+                            on_press=self.delete_account_remove_data)
         )
+
+    def delete_account_remove_data(self, *args):
+        self.dialog_button(two_alternatives=True,
+                           text_button='GO BACK',
+                           text_button2="YES, I'M SURE",
+                           dialog_title='Are you sure?',
+                           dialog_text='If you delete your account you will loose all your data',
+                           action_button2='self.app.delete_account_and_data')
+
+        self.remove_screens()
+
+    def delete_account_and_data(self):
+        self.cancel_user_data_from_group_in_db(group_list=self.user_groups)
+        self.remove_screens()
+        self.app.DeleteAccount()
+
 
     # DYNAMIC CONSTRUCTION
     def update_data_table(self, *args):
@@ -317,7 +335,7 @@ class MainScreen(Screen):
                 text="Leave group",
                 line_color=(1, 0, 1, 1),
                 pos_hint={'top': 0.1, 'center_x': 0.7},
-                on_press=lambda x: self.leave_group
+                on_press=self.leave_group #lambda x: self.leave_group
             )
         )
 
@@ -359,17 +377,26 @@ class MainScreen(Screen):
 
         if self.join_group_name in join_path.keys():
             if self.user.uid in join_path[self.join_group_name]['group users'].keys():
-                self.dialog_button(text_button='Retry',
+                self.dialog_button(two_alternatives=False,
+                                   text_button='Retry',
+                                   text_button2='',
                                    dialog_title=f'join not succeed',
-                                   dialog_text='user already joined the group')
+                                   dialog_text='user already joined the group',
+                                   action_button2='')
             elif self.join_group_password != str(join_path[self.join_group_name]['admin']['password']):
-                self.dialog_button(text_button='Retry',
+                self.dialog_button(two_alternatives=False,
+                                   text_button='Retry',
+                                   text_button2='',
                                    dialog_title=f'join not succeed',
-                                   dialog_text='wrong password')
+                                   dialog_text='wrong password',
+                                   action_button2='')
             else:
-                self.dialog_button(text_button='OK',
+                self.dialog_button(two_alternatives=False,
+                                   text_button='OK',
+                                   text_button2='',
                                    dialog_title=f'join succeed',
-                                   dialog_text=f'Joined group {self.join_group_name}')
+                                   dialog_text=f'Joined group {self.join_group_name}',
+                                   action_button2='')
 
                 self.ref.child('groups').child(f"{self.join_group_name}").child('group users').update(
                     {f"{self.user.uid}": True}
@@ -377,20 +404,31 @@ class MainScreen(Screen):
                 self.remove_screens()
                 self.on_pre_enter()
         else:
-            self.dialog_button(text_button='Retry',
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
                                dialog_title=f'join not succeed',
-                               dialog_text=f'{self.join_group_name} does not exists')
+                               dialog_text=f'{self.join_group_name} does not exists',
+                               action_button2='')
 
-    def leave_group(self):
-        self.ref.child('groups').child(self.group_screen).child('group users').child(f'{self.user.uid}').delete()
-        if self.user.uid in self.ref.child('groups').child(self.group_screen).child('users data').get().keys():
-            self.ref.child('groups').child(self.group_screen).child('users data').child(f'{self.user.uid}').delete()
+    def cancel_user_data_from_group_in_db(self, group_list: list):
+        for group in group_list:
+            self.ref.child('groups').child(eval(group)).child('group users').child(f'{self.user.uid}').delete()
+            if self.user.uid in self.ref.child('groups').child(eval(group)).child('users data').get().keys():
+                self.ref.child('groups').child(eval(group)).child('users data').child(f'{self.user.uid}').delete()
 
+    def leave_group(self, *args):
+        self.cancel_user_data_from_group_in_db(group_list=['self.group_screen'])
         self.remove_screens()
         self.on_pre_enter()
-        self.dialog_button(text_button='OK',
-                           dialog_title='Succeed',
-                           dialog_text='Group deleted')
+        self.dialog_button(two_alternatives=False,
+                           text_button='OK',
+                           text_button2='',
+                           dialog_title=f'Succeed',
+                           dialog_text=f'Group deleted',
+                           action_button2='')
+
+
 
     def create_new_group(self):
         self.group_name = self.ids.group_name.text
@@ -426,14 +464,23 @@ class MainScreen(Screen):
             self.ref.child('groups').update(data_to_set)
             self.remove_screens()
             self.on_pre_enter()
-            self.dialog_button(text_button='OK',
+            self.dialog_button(two_alternatives=False,
+                               text_button='OK',
+                               text_button2='',
                                dialog_title='Group created',
-                               dialog_text='Share the group password with your friends to let them join the group')
+                               dialog_text='Share the group password with your friends to let them join the group',
+                               action_button2='')
 
         else:
             self.dialog_button(text_button='Retry',
                                dialog_title='Group name already exists',
                                dialog_text='A group with the same name already exists, choose another name')
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title='Group name already exists',
+                               dialog_text='A group with the same name already exists, choose another name',
+                               action_button2='')
 
     def remove_screens(self):
         keep_groups = ['scr add group', 'screen profile', 'screen join group']
@@ -490,11 +537,12 @@ class MainScreen(Screen):
     def get_group_data(self):
         group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users data').get()
         df_list = []
+        # TODO: perchè funzioni bene c'è bisogno che quando un utente viene eliminato anche tutti i dati dipendenti dal suo uid vengano eliminati
         for uid in group_path.keys():
             if uid != "admin":
-                user = auth.get_user(self.user.uid)
+                user = auth.get_user(uid)
                 username = user.display_name
-                dict_grpup = group_path[self.user.uid]
+                dict_grpup = group_path[uid]
                 dict_grpup.update({
                     "user": username
                 })
@@ -525,17 +573,31 @@ class MainScreen(Screen):
         print(instance_table, instance_row)
 
     def dialog_button(self,
+                      two_alternatives: bool,
                       text_button: str,
+                      text_button2: str,
                       dialog_title: str,
-                      dialog_text: str):
+                      dialog_text: str,
+                      action_button2: str):
 
-        cancel_btn_username_dialogue_mail = MDFlatButton(text=text_button,
+        if two_alternatives is True:
+            self.dialog = MDDialog(title=dialog_title,
+                                   text=dialog_text,
+                                   buttons=[MDFlatButton(text=text_button,
+                                                         on_release=self.close_username_dialog),
+                                            MDFlatButton(text=text_button2,
+                                                         on_release=eval(action_button2))
+                                            ]
+                                   )
+            self.dialog.open()
+        else:
+            self.dialog = MDDialog(title=dialog_title,
+                                   text=dialog_text,
+                                   buttons=[MDFlatButton(text=text_button,
                                                          on_release=self.close_username_dialog)
-        self.dialog = MDDialog(title=dialog_title,
-                               text=dialog_text,
-                               size_hint=(0.7, 0.2),
-                               buttons=[cancel_btn_username_dialogue_mail])
-        self.dialog.open()
+                                            ]
+                                   )
+            self.dialog.open()
 
     def close_username_dialog(self, *args):
         self.dialog.dismiss()

@@ -8,6 +8,7 @@
 				"destination address": "via di casaglia 4, Bologna"
 			},
 			"group users": {
+				"admin": true,
 				"UZt4HRRqXROxaxgVZGqvoCOzFEu1": true
 			},
 			"users data": {

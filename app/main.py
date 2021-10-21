@@ -206,15 +206,18 @@ class MainScreen(Screen):
                            text_button2="YES, I'M SURE",
                            dialog_title='Are you sure?',
                            dialog_text='If you delete your account you will loose all your data',
-                           action_button2='self.app.delete_account_and_data')
-
-        self.remove_screens()
+                           action_button2='self.delete_account_and_data')
 
     def delete_account_and_data(self):
         self.cancel_user_data_from_group_in_db(group_list=self.user_groups)
         self.remove_screens()
         self.app.DeleteAccount()
-
+        self.dialog_button(two_alternatives=False,
+                           text_button='OK',
+                           text_button2="",
+                           dialog_title='Profile deleted',
+                           dialog_text="So sad you're leaving :( ",
+                           action_button2='')
 
     # DYNAMIC CONSTRUCTION
     def update_data_table(self, *args):
@@ -445,6 +448,7 @@ class MainScreen(Screen):
                     "destination address": self.group_destination_address
                 },
                 "group users": {
+                    "admin": True,
                     f"{self.user.uid}": True
                 },
                 "users data": {

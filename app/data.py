@@ -20,4 +20,4 @@ input_data = {
                 'Via del cardo 17, Bologna',
                 'Via speranza 8, Bologna',
                 'via dei mille 5, Bologna']
-              }
+    }

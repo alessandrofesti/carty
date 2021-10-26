@@ -45,6 +45,11 @@ from functions import load_kv
 # buildozer -v android clean
 # buildozer android debug
 
+# Get total memory used
+# import os, psutil
+# process = psutil.Process(os.getpid())
+# print(process.memory_info().rss)  # in bytes
+
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db, auth
@@ -61,6 +66,7 @@ import pandas as pd
 #   Da aggiungere il check in data_table
 #   Quando delete bisogna cancellare l'user da tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
+#   In get_latlon_fromaddress cambiare country e city
 
 from  kivy.uix.gridlayout import GridLayout
 import json
@@ -122,6 +128,8 @@ class MainScreen(Screen):
         self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 20
         self.user_groups = self.get_user_groups()
+        #self.dialog_button = Test.dialog_button
+        self.cloclose_username_dialog = Test.close_username_dialog
         self.dialog = None
 
         # DYNAMIC CONSTRUCTION
@@ -195,12 +203,12 @@ class MainScreen(Screen):
         self.app.DeleteAccount()
 
     # DYNAMIC CONSTRUCTION
-    def update_data_table(self, *args):
-        self.table = self.get_data_table()
-        self.layout.clear_widgets()
-        self.create_info_onelinelistitems()
-        self.layout.add_widget(self.table)
-        self.create_run_data_buttons()
+    # def update_data_table(self, *args):
+    #     self.table = self.get_data_table()
+    #     self.layout.clear_widgets()
+    #     self.create_info_onelinelistitems()
+    #     self.layout.add_widget(self.table)
+    #     self.create_run_data_buttons()
 
     def add_dynamic_screen(self):
         group_screen = Screen(name=f"{self.group_screen}")
@@ -272,8 +280,12 @@ class MainScreen(Screen):
 
         # Add data table
         self.table = self.get_data_table()
-        self.table.bind(on_row_press=self.on_row_press)
+        #self.table.bind(on_check_press=self.on_check_press)
         self.layout.add_widget(self.table)
+
+    # def on_check_press(self, instance_table, current_row):
+    #     '''Called when a table row is clicked.'''
+    #     print(instance_table, current_row)
 
     def get_info_group(self):
         self.pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
@@ -319,31 +331,37 @@ class MainScreen(Screen):
             )
         )
 
-    def run_simulation(self, *args):
-        self.get_run_datatable()
-
     def df_to_datatable(self):
         pass
 
     def datatable_to_df(self):
         df_cols = [i[0] for i in self.table.column_data]
         if len(self.table.row_data) > 0:
-            lists = []
-            for row in self.table.row_data:
-                lists.append(list(row))
-            df_tot = pd.DataFrame(lists, columns=df_cols)
+            # lists = []
+            # for row in self.table_run.row_data:
+            #     lists.append(list(row))
+            df_tot = pd.DataFrame(self.table_run, columns=df_cols)
         else:
             df_tot = pd.DataFrame(columns=df_cols)
 
         return df_tot
 
-    def get_run_datatable(self):
+    def run_simulation(self, *args):
+        self.dialog_button(two_alternatives=True,
+                           text_button='Back',
+                           text_button2='Run',
+                           dialog_title=f'Attention',
+                           dialog_text='the model considers just the rows checked before',
+                           action_button2='self.get_run_datatable')
+
+    def get_run_datatable(self, *args):
+        self.table_run = self.table.get_row_checks()
         self.df_run_simulation = self.datatable_to_df()
         self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
 
         if len(self.df_run_simulation) > 0:
             # Get input data
-            input_data = {
+            self.input_data = {
                 "Name": list(self.df_run_simulation.user),
                 "demands": [1 if ap == 0 else 0 for ap in self.df_run_simulation['avaliable places']],
                 "free_places": list(self.df_run_simulation['avaliable places']),
@@ -352,25 +370,50 @@ class MainScreen(Screen):
 
             # Update info with destination data
             self.get_info_group()
-            input_data['Name'].append('destination')
-            input_data['demands'].append(1)
-            input_data['free_places'].append(0)
-            input_data['address'].append(self.destination_address)
+            self.input_data['Name'].append('destination')
+            self.input_data['demands'].append(1)
+            self.input_data['free_places'].append(0)
+            self.input_data['address'].append(self.destination_address)
 
             # Run model
-            distance_matrix = model.get_distance_matrix(input_data)
-            shifts = model.main(distance_matrix)
-            df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
-            print(df_shifts)
+            self.run_model()
+
 
         else:
-            input_data = {}
+            self.input_data = {}
             self.dialog_button(two_alternatives=False,
                                text_button='Retry',
                                text_button2='',
                                dialog_title=f'Run not possible',
                                dialog_text='add data to run the model',
                                action_button2='')
+
+    def run_model(self, *args):
+        self.distance_matrix = model.get_distance_matrix(self.input_data, city='Bologna', country='Italy')
+        self.shifts = model.main(self.distance_matrix)
+        print(f"Ottimizzazione finita -- {self.shifts}")
+
+        self.output_table = self.get_run_datatable_todisplay()
+        self.create_output_screen()
+        self.add_output_table_toscreen()
+
+    def get_run_datatable_todisplay(self):
+        self.df_shifts = pd.DataFrame.from_dict(self.shifts, orient='index')
+        # blablabla
+        return self.output_table
+
+    def create_output_screen(self):
+        self.output_screen = Screen(name=f"Output screen -- {self.group_screen}")
+        self.ids.screen_manager.add_widget(self.output_screen)
+        self.ids.screen_manager.ids[f"{self.output_screen}"] = weakref.ref(self.output_screen)
+
+    def add_output_table_toscreen(self):
+        self.layout_output = MDFloatLayout(
+            size=(self.width,
+                  self.height)
+        )
+        self.ids.screen_manager.get_screen(f'Output screen -- {self.group_screen}').add_widget(self.layout_output)
+        self.layout_output.add_widget(self.output_table)
 
     def join_existing_group(self, *args):
         self.join_group_name = self.ids.join_group_name.text
@@ -526,8 +569,12 @@ class MainScreen(Screen):
                 "avaliable places": self.avaliable_places_button
             }
 
+        self.group_screen_updated = self.group_screen
         self.ref.child('groups').child(f'{self.group_screen}').child('users data').child(f"{self.user.uid}").set(data_to_set)
-        self.update_data_table()
+        self.remove_screens()
+        self.on_pre_enter()
+        # GO back to the previous screen
+        self.group_screen = self.group_screen_updated
         self.change_screen(self.group_screen)
 
     def get_user(self):
@@ -578,10 +625,6 @@ class MainScreen(Screen):
             pos_hint={'top': 0.8, 'center_x': 0.5}
         )
         return table
-
-    def on_row_press(self, instance_table, instance_row):
-        '''Called when a table row is clicked.'''
-        print(instance_table, instance_row)
 
     def dialog_button(self,
                       two_alternatives: bool,

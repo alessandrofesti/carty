@@ -1,4 +1,6 @@
-from geopy.geocoders import Nominatim
+import time
+
+from geopy.geocoders import Nominatim, OpenMapQuest
 from geopy.distance import geodesic
 from itertools import product
 import pandas as pd
@@ -7,18 +9,36 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
 from data import input_data
+from geopy.extra.rate_limiter import RateLimiter
+import urllib
+import requests
+
+city = 'Bologna'
+country = 'Italia'
 
 
-def get_latlon_fromaddress(address):
-        geolocator = Nominatim(user_agent="Your_Name")
-        location = geolocator.geocode(address)
-        latlon = [location.latitude, location.longitude]
-        return latlon
+def get_latlon_fromaddress(address, city, country):
+    attempts = 0
+    while attempts < 5:
+        try:
+            print(f'address is {address} -- lat is {latitude} -- lon is {longitude}')
+            url = f"https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}&country={country}"
+            headers = {'Accept': 'application/json'}
+            response = requests.get(url, headers=headers).json()
+            latitude = response[0]['lat']
+            longitude = response[0]['lon']
+        except:
+            attempts += 1
+            latitude = 'cannot geocode'
+            longitude = 'cannot geocode'
+
+    latlon = [latitude, longitude]
+
+    return latlon
 
 
-def get_distance_matrix(input_data):
-
-    latlons = [get_latlon_fromaddress(address) for address in input_data['address']]
+def get_distance_matrix(input_data, city, country):
+    latlons = [get_latlon_fromaddress(address=address, city=city, country=country) for address in input_data['address']]
 
     df_combs = pd.DataFrame(list(product(latlons, latlons)))
     df_combs.columns = ['first_item', 'second_item']
@@ -56,7 +76,7 @@ def create_data_model(distance_matrix):
 
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
-    print(f'Objective: {solution.ObjectiveValue()}')
+    #print(f'Objective: {solution.ObjectiveValue()}')
     total_distance = 0
     total_load = 0
     shifts = {}
@@ -81,14 +101,15 @@ def print_solution(data, manager, routing, solution):
         car_shifts.append(manager.IndexToNode(index))  # add
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         plan_output += 'Load of the route: {}\n'.format(route_load)
-        print(plan_output)
+        #print(plan_output)
         total_distance += route_distance
         total_load += route_load
 
         shifts[vehicle_id] = car_shifts  # add
 
-    print('Total distance of all routes: {}m'.format(total_distance))
-    print('Total load of all routes: {}'.format(total_load))
+    shifts['total_distance'] = total_distance
+    #print('Total distance of all routes: {}m'.format(total_distance))
+    #print('Total load of all routes: {}'.format(total_load))
 
     return shifts
 
@@ -124,7 +145,7 @@ def main(distance_matrix):
     routing.AddDimension(
         transit_callback_index,
         0,  # no slack
-        5000,  # vehicle maximum travel distance
+        500,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name)
     distance_dimension = routing.GetDimensionOrDie(dimension_name)

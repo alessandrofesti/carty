@@ -4,6 +4,7 @@ from geopy.geocoders import Nominatim, OpenMapQuest
 from geopy.distance import geodesic
 from itertools import product
 import pandas as pd
+import sys
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
@@ -12,6 +13,7 @@ from data import input_data
 from geopy.extra.rate_limiter import RateLimiter
 import urllib
 import requests
+import traceback
 
 city = 'Bologna'
 country = 'Italia'
@@ -21,13 +23,29 @@ def get_latlon_fromaddress(address, city, country):
     attempts = 0
     while attempts < 5:
         try:
-            print(f'address is {address} -- lat is {latitude} -- lon is {longitude}')
-            url = f"https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}&country={country}"
+            # https://nominatim.openstreetmap.org/search?format=json&limit=1&street=Via Marzabotto 10&city=Bologna&country=Italy
+            url = "https://nominatim.openstreetmap.org/search?"
+            #url = f"https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}&country={country}"
             headers = {'Accept': 'application/json'}
-            response = requests.get(url, headers=headers).json()
+            params = dict(
+                address=address,
+                city=city,
+                country=country,
+            )
+            response = requests.get(url,
+                                    headers=headers,
+                                    params=params).json()
             latitude = response[0]['lat']
             longitude = response[0]['lon']
-        except:
+
+            print(f'address is {address} -- lat is {latitude} -- lon is {longitude}')
+            # geolocator = Nominatim(user_agent="Carty")
+            # location = geolocator.geocode(address)
+            # latitude = location.latitude
+            # longitude = location.longitude
+        except Exception as exception:
+            print("Exception: {}".format(type(exception).__name__))
+            print("Exception message: {}".format(exception))
             attempts += 1
             latitude = 'cannot geocode'
             longitude = 'cannot geocode'
@@ -42,6 +60,11 @@ def get_distance_matrix(input_data, city, country):
 
     df_combs = pd.DataFrame(list(product(latlons, latlons)))
     df_combs.columns = ['first_item', 'second_item']
+
+    # TODO: strutturare meglio questa parte
+    df_combs = df_combs.loc[df_combs['first_item'] != "cannot geocode" & df_combs['first_item'] != "cannot geocode"]
+
+    if len(df_combs) == 0:  sys.exit()
 
     dists = [geodesic(lt, ln).km for lt, ln in zip(df_combs.first_item, df_combs.second_item)]
     df_combs['dist'] = dists

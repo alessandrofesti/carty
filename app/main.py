@@ -396,6 +396,7 @@ class MainScreen(Screen):
         self.output_table = self.get_run_datatable_todisplay()
         self.create_output_screen()
         self.add_output_table_toscreen()
+        self.change_screen(f"Output screen -- {self.group_screen}")
 
     def get_run_datatable_todisplay(self):
         self.df_shifts = pd.DataFrame.from_dict(self.shifts, orient='index')

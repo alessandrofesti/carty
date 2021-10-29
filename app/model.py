@@ -9,7 +9,6 @@ import sys
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
-from data import input_data
 from geopy.extra.rate_limiter import RateLimiter
 import urllib
 import requests
@@ -71,6 +70,11 @@ def get_distance_matrix(input_data):
     df_combs = pd.DataFrame(list(product(latlons_filtered, latlons_filtered)))
     df_combs.columns = ['first_item', 'second_item']
 
+    # Explode horizontally
+    # x = pd.concat(
+    #     [df1[c].apply(pd.Series).add_prefix(c + "_") for c in df1], axis=1)
+    # print(x)
+
     dists = [geodesic(lt, ln).km for lt, ln in zip(df_combs.first_item, df_combs.second_item)]
     df_combs['dist'] = dists
 
@@ -86,7 +90,7 @@ def get_distance_matrix(input_data):
     return distance_matrix, df_geocoded
 
 
-def create_data_model(distance_matrix):
+def create_data_model(distance_matrix, input_data):
     """Stores the data for the problem."""
     data = {}
     data['distance_matrix'] = distance_matrix
@@ -143,10 +147,10 @@ def print_solution(data, manager, routing, solution):
     return shifts
 
 
-def main(distance_matrix):
+def main(distance_matrix, input_data):
     """Entry point of the program."""
     # Instantiate the data problem.
-    data = create_data_model(distance_matrix)
+    data = create_data_model(distance_matrix, input_data)
 
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),

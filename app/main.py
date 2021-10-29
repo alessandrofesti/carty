@@ -399,10 +399,9 @@ class MainScreen(Screen):
                                action_button2='')
 
     def run_model(self, *args):
-        self.distance_matrix, self.df_geocoded = model.get_distance_matrix(self.input_data)
+        self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
         self.n_not_geocoded = len(self.df_geocoded.loc[self.df_geocoded['lat'] == 'cannot geocode'])
-        self.shifts = model.main(self.distance_matrix)
-        #print(f"Ottimizzazione finita -- {self.shifts}")
+        self.shifts = model.main(distance_matrix=self.distance_matrix, input_data=self.input_data)
 
         self.output_table_d = self.get_run_datatable_todisplay()
         self.create_output_screen()

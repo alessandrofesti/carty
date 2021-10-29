@@ -67,8 +67,9 @@ import pandas as pd
 #   Quando delete bisogna cancellare l'user da tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
 #   In get_latlon_fromaddress cambiare country e city
+#   Model: gestire non abbastanza passaggi e geocoding non andato
 
-from  kivy.uix.gridlayout import GridLayout
+from kivy.uix.gridlayout import GridLayout
 import json
 import pdb
 
@@ -155,7 +156,7 @@ class MainScreen(Screen):
         #self.layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
         #self.layout_buttons = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[1]
         self.layout_user = self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').children[0]
-        print(f'current group_screen in {self.group_screen}')
+        print(f'current group_screen is {self.group_screen}')
 
     def change_screen_scrollview(self, child):
         self.usage_main(child=child)
@@ -248,12 +249,22 @@ class MainScreen(Screen):
         )
         self.layout_user.add_widget(avaliable_places)
         self.ids['avaliable_places'] = weakref.ref(avaliable_places)
+        city_address_data = MDTextField(
+            halign="center",
+            size_hint_x=0.6,
+            size_hint_y=0.1,
+            hint_text="Your city of departure",
+            pos_hint={'top': 0.65, 'center_x': 0.5},
+            mode="line"
+        )
+        self.layout_user.add_widget(city_address_data)
+        self.ids['address_button'] = weakref.ref(city_address_data)
         address_data = MDTextField(
             halign="center",
             size_hint_x=0.6,
             size_hint_y=0.1,
             hint_text="Your address of departure",
-            pos_hint={'top': 0.65, 'center_x': 0.5},
+            pos_hint={'top': 0.55, 'center_x': 0.5},
             mode="line"
         )
         self.layout_user.add_widget(address_data)
@@ -263,7 +274,7 @@ class MainScreen(Screen):
             size_hint_x=5,
             size_hint_y=5,
             size=(0.7, 0.05),
-            pos_hint={'top': 0.5, 'center_x': 0.5},
+            pos_hint={'top': 0.4, 'center_x': 0.5},
             on_release=self.get_update_user_data
         )
         self.layout_user.add_widget(add_data_button)
@@ -291,13 +302,14 @@ class MainScreen(Screen):
         self.pass_path = self.ref.child('groups').child(f"{self.group_screen}").child("admin").get()
         self.group_pass_join = self.pass_path['password']
         self.destination_address = self.pass_path['destination address']
+        self.destination_city = self.pass_path['destination city']
 
     def create_info_onelinelistitems(self):
         self.get_info_group()
         # Add password and destination labels
         self.pass_label = OneLineListItem(text=f"Group password: [b]{self.group_pass_join}[/b]",
                                           pos_hint={'top': 1, 'center_x': 0.5})
-        self.dest_label = OneLineListItem(text=f"Group destination: [b]{self.destination_address}[/b]",
+        self.dest_label = OneLineListItem(text=f"Group destination: [b]{self.destination_address} ({self.destination_city})[/b]",
                                           pos_hint={'top': 0.9, 'center_x': 0.5})
 
         self.layout.add_widget(self.pass_label, index=0)
@@ -327,7 +339,7 @@ class MainScreen(Screen):
                 text="Leave group",
                 line_color=(1, 0, 1, 1),
                 pos_hint={'top': 0.1, 'center_x': 0.7},
-                on_press=self.leave_group #lambda x: self.leave_group
+                on_press=self.leave_group
             )
         )
 
@@ -337,9 +349,6 @@ class MainScreen(Screen):
     def datatable_to_df(self):
         df_cols = [i[0] for i in self.table.column_data]
         if len(self.table.row_data) > 0:
-            # lists = []
-            # for row in self.table_run.row_data:
-            #     lists.append(list(row))
             df_tot = pd.DataFrame(self.table_run, columns=df_cols)
         else:
             df_tot = pd.DataFrame(columns=df_cols)
@@ -365,7 +374,8 @@ class MainScreen(Screen):
                 "Name": list(self.df_run_simulation.user),
                 "demands": [1 if ap == 0 else 0 for ap in self.df_run_simulation['avaliable places']],
                 "free_places": list(self.df_run_simulation['avaliable places']),
-                "address": list(self.df_run_simulation['address'])
+                "address": list(self.df_run_simulation['address']),
+                "city": list(self.df_run_simulation['city'])
             }
 
             # Update info with destination data
@@ -374,10 +384,10 @@ class MainScreen(Screen):
             self.input_data['demands'].append(1)
             self.input_data['free_places'].append(0)
             self.input_data['address'].append(self.destination_address)
+            self.input_data['city'].append(self.destination_city)
 
             # Run model
             self.run_model()
-
 
         else:
             self.input_data = {}
@@ -389,19 +399,49 @@ class MainScreen(Screen):
                                action_button2='')
 
     def run_model(self, *args):
-        self.distance_matrix = model.get_distance_matrix(self.input_data, city='Bologna', country='Italy')
+        self.distance_matrix, self.df_geocoded = model.get_distance_matrix(self.input_data)
+        self.n_not_geocoded = len(self.df_geocoded.loc[self.df_geocoded['lat'] == 'cannot geocode'])
         self.shifts = model.main(self.distance_matrix)
-        print(f"Ottimizzazione finita -- {self.shifts}")
+        #print(f"Ottimizzazione finita -- {self.shifts}")
 
-        self.output_table = self.get_run_datatable_todisplay()
+        self.output_table_d = self.get_run_datatable_todisplay()
         self.create_output_screen()
         self.add_output_table_toscreen()
         self.change_screen(f"Output screen -- {self.group_screen}")
+        #self.remove_screen_after_run()
 
     def get_run_datatable_todisplay(self):
-        self.df_shifts = pd.DataFrame.from_dict(self.shifts, orient='index')
-        # blablabla
-        return self.output_table
+        df_trip = pd.DataFrame(self.shifts[0], columns=['trip_order'])
+        self.output_table_name = [self.df_geocoded['Name'][index] for index in df_trip['trip_order']]
+        self.output_table_address = [self.df_geocoded['Address'][index] for index in df_trip['trip_order']]
+
+        self.output_table_f = pd.DataFrame({
+            'order': self.output_table_name,
+            'address': self.output_table_address
+        })
+
+        self.output_table_f['order'] = self.output_table_f['order'].astype(str)
+        self.output_table_f['Distance'] = self.shifts['total_distance']
+        self.output_table_f = self.output_table_f.reset_index()
+        # TODO: change car number based on number of car needed
+        #   change total distance specific for each shift
+        self.output_table_f['car'] = 0
+        self.output_table_f = self.output_table_f[['car', 'index', 'order', 'address', 'Distance']]
+        self.output_table_f.columns = ['Car', 'Shift', 'Pick order', 'address', 'Total distance']
+
+        column_data = list(self.output_table_f.columns)
+        column_data = [(x, dp(60)) for x in column_data]
+        row_data = self.output_table_f.to_records(index=False)
+        self.output_table_d = MDDataTable(
+            column_data=column_data,
+            row_data=row_data,
+            check=False,
+            use_pagination=True,
+            rows_num=len(self.output_table_f)+3,
+            pos_hint={'top': 0.8, 'center_x': 0.5}
+        )
+
+        return self.output_table_d
 
     def create_output_screen(self):
         self.output_screen = Screen(name=f"Output screen -- {self.group_screen}")
@@ -413,8 +453,20 @@ class MainScreen(Screen):
             size=(self.width,
                   self.height)
         )
+        onelistitem_output_screen = OneLineListItem(text=f"Group: [b]{self.group_screen}[/b]",
+                                                    pos_hint={'top': 1, 'center_x': 0.5})
+        self.layout_output.add_widget(onelistitem_output_screen)
+        onelistitem_output_destination = OneLineListItem(text=f"Group destination: [b]{self.destination_address} ({self.destination_city})[/b]",
+                                                         pos_hint={'top': 0.9, 'center_x': 0.5})
+        self.layout_output.add_widget(onelistitem_output_destination)
         self.ids.screen_manager.get_screen(f'Output screen -- {self.group_screen}').add_widget(self.layout_output)
-        self.layout_output.add_widget(self.output_table)
+        self.layout_output.add_widget(self.output_table_d)
+
+    def remove_screen_after_run(self):
+        self.ids.screen_manager.get_screen('Output screen -- cappellania').on_leave(
+            self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen('Output screen -- cappellania'))
+        )
+
 
     def join_existing_group(self, *args):
         self.join_group_name = self.ids.join_group_name.text
@@ -482,15 +534,17 @@ class MainScreen(Screen):
     def create_new_group(self):
         self.group_name = self.ids.group_name.text
         self.group_password = self.ids.group_password.text
+        self.group_destination_city = self.ids.group_destination_city.text
         self.group_destination_address = self.ids.group_destination_address.text
+        self.user_departure_city = self.ids.user_departure_city.text
         self.user_departure_address = self.ids.user_departure_address.text
         self.user_n_avaliable_places = self.ids.user_n_avaliable_places.text
 
         data_to_set = {
             f"{self.group_name}": {
                 "admin": {
-                    "admin uid": self.user.uid,
                     "password": self.group_password,
+                    "destination city": self.group_destination_city,
                     "destination address": self.group_destination_address
                 },
                 "group users": {
@@ -503,6 +557,7 @@ class MainScreen(Screen):
                         "avaliable places": 0
                     },
                     f"{self.user.uid}": {
+                        "city": self.user_departure_city,
                         "address": self.user_departure_address,
                         "avaliable places": self.user_n_avaliable_places #TODO: check toint
                     }
@@ -549,7 +604,6 @@ class MainScreen(Screen):
         self.ids.contentnavigationdrawer.ids.container.clear_widgets(widgets_toremove)
         self.ids.nav_drawer.set_state("close")
 
-
     def get_user_groups(self):
         groups = []
         group_path = self.ref.child('groups').get().keys()
@@ -562,10 +616,12 @@ class MainScreen(Screen):
         return groups
 
     def get_update_user_data(self, *args):
-        self.avaliable_places_button = self.layout_user.children[2].text
+        self.avaliable_places_button = self.layout_user.children[3].text
+        self.city_button = self.layout_user.children[2].text
         self.address_button = self.layout_user.children[1].text
 
         data_to_set = {
+                "city": self.city_button,
                 "address": self.address_button,
                 "avaliable places": self.avaliable_places_button
             }
@@ -606,9 +662,9 @@ class MainScreen(Screen):
 
         try:
             df_group = pd.concat(df_list, axis=1).T.reset_index(drop=True)
-            df_group = df_group[['user', "address", "avaliable places"]]
+            df_group = df_group[['user', "city", "address", "avaliable places"]]
         except:
-            df_group = pd.DataFrame(columns=['user', "address", "avaliable places"])
+            df_group = pd.DataFrame(columns=['user', "city", "address", "avaliable places"])
 
         return df_group
 
@@ -657,7 +713,7 @@ class MainScreen(Screen):
                 self.dialog.open()
 
     def close_username_dialog(self, *args):
-        self.dialog.dismiss(force=True)
+        self.dialog.dismiss()
 
 
 
@@ -723,6 +779,7 @@ class Test(MDApp):
         self.requests_reset_email = requests_reset_email
         self.requests_delete_account = requests_delete_account
         self.app = Test.get_running_app()
+        self.dialog = None
         super().__init__(**kwargs)
 
     def build(self):

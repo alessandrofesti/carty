@@ -19,12 +19,13 @@ city = 'Bologna'
 country = 'Italia'
 
 
-def get_latlon_fromaddress(address, city, country):
+def get_latlon_fromaddress(address, city):
     attempts = 0
-    while attempts < 5:
+    while attempts < 3:
+        print(attempts)
         try:
-            # https://nominatim.openstreetmap.org/search?format=json&limit=1&street=Via Marzabotto 10&city=Bologna&country=Italy
-            url = "https://nominatim.openstreetmap.org/search?"
+            url = f'https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}' #&country={country}
+            #url = "https://nominatim.openstreetmap.org/search/<params>?"
             #url = f"https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}&country={country}"
             headers = {'Accept': 'application/json'}
             params = dict(
@@ -43,41 +44,46 @@ def get_latlon_fromaddress(address, city, country):
             # location = geolocator.geocode(address)
             # latitude = location.latitude
             # longitude = location.longitude
+            attempts = 3
         except Exception as exception:
             print("Exception: {}".format(type(exception).__name__))
             print("Exception message: {}".format(exception))
-            attempts += 1
             latitude = 'cannot geocode'
             longitude = 'cannot geocode'
+            attempts += 1
+
 
     latlon = [latitude, longitude]
 
     return latlon
 
 
-def get_distance_matrix(input_data, city, country):
-    latlons = [get_latlon_fromaddress(address=address, city=city, country=country) for address in input_data['address']]
+def get_distance_matrix(input_data):
+    latlons = [get_latlon_fromaddress(address=address, city=city) for address, city in zip(input_data['address'], input_data['city'])]
+    df_geocoded = pd.DataFrame(latlons, columns=['lat', 'lon'])
+    df_geocoded = df_geocoded.sort_values(by='lat')
+    df_geocoded['Name'] = input_data['Name']
+    df_geocoded['address'] = input_data['address']
+    df_geocoded = df_geocoded.reset_index()
+    df_geocoded.columns = ['index', 'lat', 'lon', 'Name', 'Address']
 
-    df_combs = pd.DataFrame(list(product(latlons, latlons)))
+    latlons_filtered = [[lat, lon] for lat, lon in zip(df_geocoded['lat'], df_geocoded['lon']) if lat != 'cannot geocode']
+    df_combs = pd.DataFrame(list(product(latlons_filtered, latlons_filtered)))
     df_combs.columns = ['first_item', 'second_item']
-
-    # TODO: strutturare meglio questa parte
-    df_combs = df_combs.loc[df_combs['first_item'] != "cannot geocode" & df_combs['first_item'] != "cannot geocode"]
-
-    if len(df_combs) == 0:  sys.exit()
 
     dists = [geodesic(lt, ln).km for lt, ln in zip(df_combs.first_item, df_combs.second_item)]
     df_combs['dist'] = dists
 
     distance_matrix = []
     df_combs['first_item'] = df_combs['first_item'].apply(lambda x: str(x))
+    df_combs['second_item'] = df_combs['second_item'].apply(lambda x: str(x))
 
     for lox in df_combs['first_item'].unique():
         mdl = df_combs.loc[df_combs['first_item'] == lox].dist
         list_mdl = list(mdl)
         distance_matrix.append(list_mdl)
 
-    return distance_matrix
+    return distance_matrix, df_geocoded
 
 
 def create_data_model(distance_matrix):

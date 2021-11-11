@@ -12,12 +12,40 @@
 #         }
 
 
-input_data = {
-    'Name': ['festi00', 'alefestiwork', 'ale', 'destination'],
-    'demands': [1, 0, 1, 1],
-    'free_places': [0, 2, 0, 0],
-    'address': ['Via Marzabotto 10, Bologna',
-                'Via del cardo 17, Bologna',
-                'Via speranza 8, Bologna',
-                'via dei mille 5, Bologna']
-    }
+# input_data = {
+#     'Name': ['festi00', 'alefestiwork', 'ale', 'destination'],
+#     'demands': [1, 0, 1, 1],
+#     'free_places': [0, 2, 0, 0],
+#     'address': ['Via Marzabotto 10, Bologna',
+#                 'Via del cardo 17, Bologna',
+#                 'Via speranza 8, Bologna',
+#                 'via dei mille 5, Bologna']
+#     }
+
+input_data = {'Name': ['papi',
+                      'mamma',
+                      'matti1',
+                      'matti2',
+                      'festi00',
+                      'alefestiwork',
+                      'ale',
+                      'destination'],
+             'demands': [1, 0, 1, 1, 1, 0, 0, 1],
+             'free_places': [0, 1, 0, 0, 0, 8, 2, 0],
+             'address': ['Via Pasubio 3',
+                         'VIa Oslavia 5',
+                         'Via Pasubio 10',
+                         'Vpksvvve',
+                         'Via dei Mille 3',
+                         'Via Indipendenza 4',
+                         'Via Marzabotto 1',
+                         'via di casaglia 4'],
+            'city': ['Bologna',
+                     'Bologna',
+                     'Bologna',
+                     'Bologna',
+                     'Bologna',
+                     'Bologna',
+                     'Bologna',
+                     'Bologna']
+}

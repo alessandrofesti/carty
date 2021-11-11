@@ -14,9 +14,12 @@ import urllib
 import requests
 import traceback
 
-city = 'Bologna'
-country = 'Italia'
+# city = 'Bologna'
+# country = 'Italia'
 
+# TODO:
+#   - gestire le location non geolocalizzate bene, ora non funzia
+#   - aggiungere distanza
 
 def get_latlon_fromaddress(address, city):
     attempts = 0
@@ -30,27 +33,23 @@ def get_latlon_fromaddress(address, city):
             params = dict(
                 address=address,
                 city=city,
-                country=country,
+                #country=country,
             )
             response = requests.get(url,
                                     headers=headers,
                                     params=params).json()
             latitude = response[0]['lat']
             longitude = response[0]['lon']
-
             print(f'address is {address} -- lat is {latitude} -- lon is {longitude}')
-            # geolocator = Nominatim(user_agent="Carty")
-            # location = geolocator.geocode(address)
-            # latitude = location.latitude
-            # longitude = location.longitude
+
             attempts = 3
         except Exception as exception:
             print("Exception: {}".format(type(exception).__name__))
             print("Exception message: {}".format(exception))
+            print(address)
             latitude = 'cannot geocode'
             longitude = 'cannot geocode'
             attempts += 1
-
 
     latlon = [latitude, longitude]
 
@@ -60,20 +59,18 @@ def get_latlon_fromaddress(address, city):
 def get_distance_matrix(input_data):
     latlons = [get_latlon_fromaddress(address=address, city=city) for address, city in zip(input_data['address'], input_data['city'])]
     df_geocoded = pd.DataFrame(latlons, columns=['lat', 'lon'])
-    df_geocoded = df_geocoded.sort_values(by='lat')
     df_geocoded['Name'] = input_data['Name']
     df_geocoded['address'] = input_data['address']
+    df_geocoded['city'] = input_data['city']
+    df_geocoded['demands'] = input_data['demands']
+    df_geocoded['free_places'] = input_data['free_places']
     df_geocoded = df_geocoded.reset_index()
-    df_geocoded.columns = ['index', 'lat', 'lon', 'Name', 'Address']
+    # df_geocoded = df_geocoded.sort_values(by='lat')
+    df_geocoded.columns = ['index', 'lat', 'lon', 'Name', 'Address', 'City', 'demands', 'free_places']
 
     latlons_filtered = [[lat, lon] for lat, lon in zip(df_geocoded['lat'], df_geocoded['lon']) if lat != 'cannot geocode']
     df_combs = pd.DataFrame(list(product(latlons_filtered, latlons_filtered)))
     df_combs.columns = ['first_item', 'second_item']
-
-    # Explode horizontally
-    # x = pd.concat(
-    #     [df1[c].apply(pd.Series).add_prefix(c + "_") for c in df1], axis=1)
-    # print(x)
 
     dists = [geodesic(lt, ln).km for lt, ln in zip(df_combs.first_item, df_combs.second_item)]
     df_combs['dist'] = dists
@@ -90,30 +87,34 @@ def get_distance_matrix(input_data):
     return distance_matrix, df_geocoded
 
 
-def create_data_model(distance_matrix, input_data):
+def create_data_model(distance_matrix, df_geocoded):
     """Stores the data for the problem."""
+    df_geocoded_f = df_geocoded.loc[df_geocoded['lat'] != 'cannot geocode']
+    users_not_geocoded = list(df_geocoded.loc[df_geocoded['lat'] == 'cannot geocode'].Name)
+    df_geocoded_f = df_geocoded_f.set_index('index').sort_index(ascending=True)
     data = {}
-    data['distance_matrix'] = distance_matrix
-    data['demands'] = input_data['demands']
-    data['num_vehicles'] = len([i for i, e in enumerate(input_data['free_places']) if e != 0])
-    data['vehicle_capacities'] = [e for i, e in enumerate(input_data['free_places']) if e != 0]
-    data['starts'] = [i for i, e in enumerate(input_data['free_places']) if e != 0]
-    data['ends'] = data['num_vehicles']*[[i for i, e in enumerate(input_data['free_places'])][-1]]
+    data["distance_matrix"] = distance_matrix
+    data["demands"] = df_geocoded_f['demands']
+    data['num_vehicles'] = len([i for i, e in enumerate(df_geocoded_f['free_places']) if e != 0])
+    data['vehicle_capacities'] = [e for i, e in enumerate(df_geocoded_f['free_places']) if e != 0]
+    data['starts'] = [i for i, e in enumerate(df_geocoded_f['free_places']) if e != 0]
+    data['ends'] = data['num_vehicles']*[[i for i, e in enumerate(df_geocoded_f['free_places'])][-1]]
+    data['users_not_geocoded'] = users_not_geocoded
 
     return data
 
 
-# --- Get distance and time --- #
-# api_key = 'AIzaSyCNy9Jg7HdYKLCsBDwRx0XvCwARI8lyTBI'
-
-
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
-    #print(f'Objective: {solution.ObjectiveValue()}')
-    total_distance = 0
-    total_load = 0
+    # update data demands because of not geocoded entities
+    data['demands'] = data['demands'].reset_index(drop=True)
+
+    # total_distance = 0
+    # total_load = 0
     shifts = {}
     for vehicle_id in range(data['num_vehicles']):
+        total_distance = 0
+        total_load = 0
         car_shifts = []
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
@@ -140,17 +141,16 @@ def print_solution(data, manager, routing, solution):
 
         shifts[vehicle_id] = car_shifts  # add
 
-    shifts['total_distance'] = total_distance
-    #print('Total distance of all routes: {}m'.format(total_distance))
-    #print('Total load of all routes: {}'.format(total_load))
+    shifts['users_not_geocoded'] = data['users_not_geocoded']
+    #shifts['total_distance'] = total_distance
 
     return shifts
 
 
-def main(distance_matrix, input_data):
+def main(distance_matrix, df_geocoded):
     """Entry point of the program."""
     # Instantiate the data problem.
-    data = create_data_model(distance_matrix, input_data)
+    data = create_data_model(distance_matrix, df_geocoded)
 
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
@@ -178,7 +178,7 @@ def main(distance_matrix, input_data):
     routing.AddDimension(
         transit_callback_index,
         0,  # no slack
-        500,  # vehicle maximum travel distance
+        5000,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name)
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
@@ -223,11 +223,10 @@ def main(distance_matrix, input_data):
 
 
 if __name__=='__main__':
+    from data import input_data
 
-    coordinates = get_latlon_fromaddress(address='via oslavia 5 bologna')
-    print(coordinates)
-    distance_matrix = get_distance_matrix(input_data)
-    shifts = main(distance_matrix)
+    distance_matrix, df_geocoded = get_distance_matrix(input_data)
+    shifts = main(distance_matrix=distance_matrix, df_geocoded=df_geocoded)
     df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
     print(df_shifts)
 

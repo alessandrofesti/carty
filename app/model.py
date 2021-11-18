@@ -27,8 +27,6 @@ def get_latlon_fromaddress(address, city):
         print(attempts)
         try:
             url = f'https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}' #&country={country}
-            #url = "https://nominatim.openstreetmap.org/search/<params>?"
-            #url = f"https://nominatim.openstreetmap.org/search?format=json&limit=1&street={address}&city={city}&country={country}"
             headers = {'Accept': 'application/json'}
             params = dict(
                 address=address,
@@ -59,11 +57,11 @@ def get_latlon_fromaddress(address, city):
 def get_distance_matrix(input_data):
     latlons = [get_latlon_fromaddress(address=address, city=city) for address, city in zip(input_data['address'], input_data['city'])]
     df_geocoded = pd.DataFrame(latlons, columns=['lat', 'lon'])
-    df_geocoded['Name'] = input_data['Name']
-    df_geocoded['address'] = input_data['address']
-    df_geocoded['city'] = input_data['city']
-    df_geocoded['demands'] = input_data['demands']
-    df_geocoded['free_places'] = input_data['free_places']
+    df_geocoded['Name'] = input_data['Name'].copy()
+    df_geocoded['address'] = input_data['address'].copy()
+    df_geocoded['city'] = input_data['city'].copy()
+    df_geocoded['demands'] = input_data['demands'].copy()
+    df_geocoded['free_places'] = input_data['free_places'].copy()
     df_geocoded = df_geocoded.reset_index()
     # df_geocoded = df_geocoded.sort_values(by='lat')
     df_geocoded.columns = ['index', 'lat', 'lon', 'Name', 'Address', 'City', 'demands', 'free_places']
@@ -88,10 +86,10 @@ def get_distance_matrix(input_data):
 
 
 def create_data_model(distance_matrix, df_geocoded):
-    """Stores the data for the problem."""
-    df_geocoded_f = df_geocoded.loc[df_geocoded['lat'] != 'cannot geocode']
+    """Stores the data for the problem"""
+    df_geocoded_f = df_geocoded.loc[df_geocoded['lat'] != 'cannot geocode'].reset_index(drop=True)
     users_not_geocoded = list(df_geocoded.loc[df_geocoded['lat'] == 'cannot geocode'].Name)
-    df_geocoded_f = df_geocoded_f.set_index('index').sort_index(ascending=True)
+    # df_geocoded_f = df_geocoded_f.set_index('index').sort_index(ascending=True)
     data = {}
     data["distance_matrix"] = distance_matrix
     data["demands"] = df_geocoded_f['demands']

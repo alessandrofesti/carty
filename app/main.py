@@ -417,10 +417,11 @@ class MainScreen(Screen):
 
     def get_run_datatable_todisplay(self):
         self.output_table_final = pd.DataFrame()
+        self.df_geocoded_f = self.df_geocoded.loc[self.df_geocoded['lat'] != 'cannot geocode'].reset_index(drop=True)
         for index, shift in enumerate(list(self.shifts.keys())[:-1]): # questo perchè non voglio considerare anche la total distance che è l'ultimo elemento della lista
             df_trip = pd.DataFrame(self.shifts[shift], columns=['trip_order'])
-            self.output_table_name = [self.df_geocoded['Name'][index] for index in df_trip['trip_order']]
-            self.output_table_address = [self.df_geocoded['Address'][index] for index in df_trip['trip_order']]
+            self.output_table_name = [self.df_geocoded_f['Name'][index] for index in df_trip['trip_order']]
+            self.output_table_address = [self.df_geocoded_f['Address'][index] for index in df_trip['trip_order']]
 
             self.output_table_f = pd.DataFrame({
                 'order': self.output_table_name,

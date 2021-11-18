@@ -401,18 +401,23 @@ class MainScreen(Screen):
                                action_button2='')
 
     def run_model(self, *args):
-        try:
-            self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
-            # self.n_not_geocoded = len(self.df_geocoded.loc[self.df_geocoded['lat'] == 'cannot geocode'])
-            self.shifts = model.main(distance_matrix=self.distance_matrix, df_geocoded=self.df_geocoded)
+        self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
+        self.shifts = model.main(distance_matrix=self.distance_matrix, df_geocoded=self.df_geocoded)
+        if self.shifts != {}:
             self.output_table_d = self.get_run_datatable_todisplay()
             self.create_output_screen()
             self.add_output_table_toscreen()
             self.change_screen(f"Output screen -- {self.group_screen}")
-        except Exception as exception:
-            print("Exception: {}".format(type(exception).__name__))
-            print("Exception message: {}".format(exception))
-            self.change_screen(f"{self.group_screen}")
+        else:
+            #print("Exception: {}".format(type(exception).__name__))
+            #print("Exception message: {}".format(exception))
+            self.dialog_button(two_alternatives=False,
+                               text_button='Retry',
+                               text_button2='',
+                               dialog_title=f'Run not possible',
+                               dialog_text='add data to run the model',
+                               action_button2='')
+            #self.change_screen(f"{self.group_screen}")
         # self.remove_screen_after_run()
 
     def get_run_datatable_todisplay(self):
@@ -712,7 +717,7 @@ class MainScreen(Screen):
                                        buttons=[MDFlatButton(text=text_button,
                                                              on_release=self.close_username_dialog),
                                                 MDFlatButton(text=text_button2,
-                                                             on_release=eval(action_button2))
+                                                             on_press=eval(action_button2))
                                                 ]
                                        )
                 self.dialog.open()

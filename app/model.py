@@ -220,13 +220,13 @@ def main(distance_matrix, df_geocoded):
     return shifts
 
 
-if __name__=='__main__':
-    from data import input_data
-
-    distance_matrix, df_geocoded = get_distance_matrix(input_data)
-    shifts = main(distance_matrix=distance_matrix, df_geocoded=df_geocoded)
-    df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
-    print(df_shifts)
+# if __name__=='__main__':
+#     from data import input_data
+#
+#     distance_matrix, df_geocoded = get_distance_matrix(input_data)
+#     shifts = main(distance_matrix=distance_matrix, df_geocoded=df_geocoded)
+#     df_shifts = pd.DataFrame.from_dict(shifts, orient='index')
+#     print(df_shifts)
 
 
 

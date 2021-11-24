@@ -28,6 +28,7 @@ from kivymd.uix.dialog import MDDialog
 # buildozer -v android clean
 
 from functions import load_kv
+from kivymd.uix.spinner import MDSpinner
 
 # callbacks
 # access widgets by ids
@@ -59,17 +60,8 @@ from kivy.metrics import dp
 import pandas as pd
 
 # TODO:
-#   add password button
-#   unjoin user from group
-#   ottimizzare chiamate DB, farne solo una iniziale (forse): lentezza sono tutte le chiamate al DB
-#   Se delete account cancellare user da tutti i gruppi
 #   Forgot password? check che utente sia reinserito in tutti i gruppi
-#   Da aggiungere il check in data_table
-#   Quando delete bisogna cancellare l'user da tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
-#   In get_latlon_fromaddress cambiare country e city
-#   Model: gestire non abbastanza passaggi e geocoding non andato
-#   Model: separare destination nel geocoding (se non riesce son cazzi)
 #   aggiungi possibilità di modificare indirizzo di destinazione
 #   pulsante run_siulation nell'app che non funziona una seconda volta senza logout
 
@@ -332,7 +324,7 @@ class MainScreen(Screen):
                 text="Run simulation",
                 line_color=(1, 0, 1, 1),
                 pos_hint={'top': 0.1, 'center_x': 0.5},
-                on_press=self.run_simulation
+                on_release=self.run_simulation
             )
         )
         # Add Run button
@@ -358,6 +350,7 @@ class MainScreen(Screen):
         return df_tot
 
     def run_simulation(self, *args):
+        self.dialog = None
         self.dialog_button(two_alternatives=True,
                            text_button='Back',
                            text_button2='Run',
@@ -366,7 +359,10 @@ class MainScreen(Screen):
                            action_button2='self.get_run_datatable')
 
     def get_run_datatable(self, *args):
+        #self.create_spinner()
+        #self.change_screen('cappellania')
         self.table_run = self.table.get_row_checks()
+        print('si che sta andando avanti')
         self.df_run_simulation = self.datatable_to_df()
         self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
 
@@ -460,6 +456,10 @@ class MainScreen(Screen):
 
     def create_output_screen(self):
         self.output_screen = Screen(name=f"Output screen -- {self.group_screen}")
+        # Remove output screen if previously created
+        if self.output_screen.name in self.ids.screen_manager.screen_names:
+            self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(self.output_screen.name))
+        # Create new output screen
         self.ids.screen_manager.add_widget(self.output_screen)
         self.ids.screen_manager.ids[f"{self.output_screen}"] = weakref.ref(self.output_screen)
 
@@ -717,7 +717,8 @@ class MainScreen(Screen):
                                        buttons=[MDFlatButton(text=text_button,
                                                              on_release=self.close_username_dialog),
                                                 MDFlatButton(text=text_button2,
-                                                             on_press=eval(action_button2))
+                                                             on_press=eval(action_button2),
+                                                             on_release=self.close_username_dialog)
                                                 ]
                                        )
                 self.dialog.open()
@@ -733,6 +734,10 @@ class MainScreen(Screen):
 
     def close_username_dialog(self, *args):
         self.dialog.dismiss()
+
+    def create_spinner(self):
+        self.spinner = MDSpinner(active=True)
+        self.manager.current_screen.add_widget(self.spinner)
 
 
 class LoginScreen(Screen):
@@ -777,12 +782,12 @@ class DrawerList(ThemableBehavior, MDList):
 def add_ScreenManager():
     sm = ScreenManager()
     sm.add_widget(HelloScreen(name='hello'))
+    sm.add_widget(LoadingScreen(name='loading'))
     sm.add_widget(MainScreen(name='main'))
     sm.add_widget(LoginScreen(name='login'))
     sm.add_widget(SignupScreen(name='signup'))
     sm.add_widget(InputScreen(name='input'))
     sm.add_widget(ForgotPasswordScreen(name='resetpassword'))
-    sm.add_widget(LoadingScreen(name='loading'))
 
 
 class Test(MDApp):

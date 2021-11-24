@@ -1,39 +1,26 @@
 from kivy.lang import Builder
 
 from kivymd.app import MDApp
-from kivymd.uix.button import MDFlatButton
-from kivymd.uix.dialog import MDDialog
 
 KV = '''
-MDFloatLayout:
-
-    MDFlatButton:
-        text: "ALERT DIALOG"
+Screen:
+    MDSpinner:
+        size_hint: None, None
+        size: dp(46), dp(46)
         pos_hint: {'center_x': .5, 'center_y': .5}
-        on_release: app.show_alert_dialog()
+        active: True if check.active else False
+    MDCheckbox:
+        id: check
+        size_hint: None, None
+        size: dp(48), dp(48)
+        pos_hint: {'center_x': .5, 'center_y': .4}
+        active: True
 '''
 
 
-class Example(MDApp):
-    dialog = None
-
+class Test(MDApp):
     def build(self):
         return Builder.load_string(KV)
 
-    def show_alert_dialog(self):
-        if not self.dialog:
-            self.dialog = MDDialog(
-                text="Discard draft?",
-                buttons=[
-                    MDFlatButton(
-                        text="CANCEL", text_color=self.theme_cls.primary_color
-                    ),
-                    MDFlatButton(
-                        text="DISCARD", text_color=self.theme_cls.primary_color
-                    ),
-                ],
-            )
-        self.dialog.open()
 
-
-Example().run()
+Test().run()

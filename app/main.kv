@@ -205,14 +205,7 @@ ScreenManager:
                         Rectangle:
                             size: self.size
                             pos: self.pos
-                    MDFillRoundFlatButton:
-                        id: button_screen_delete
-                        text:'Ora non faccio piu nulla'
-                        pos_hint: {'top': 0.15, 'center_x': 0.5}
-                        size_hint_x: .7
-                        size_hint_y: .05
-                        on_press:
-                            root.manager.current = 'signup'
+
             MDScreen:
                 id: screen_join_group
                 name: "screen join group"
@@ -254,6 +247,47 @@ ScreenManager:
                         size_hint_y: .05
                         text:'Join exixsting group'
                         on_press: root.join_existing_group()
+            MDScreen:
+                id: screen_modify_group_destination
+                name: "screen modify group destination"
+                MDFloatLayout:
+                    size: root.width, root.height
+                    canvas.before:
+                        Rectangle:
+                            size: self.size
+                            pos: self.pos
+                    MDIconButton:
+                        icon: 'dice-multiple'
+                        user_font_size : 40
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.primary_color
+                        pos_hint: {'top': 0.9, 'center_x': 0.5}
+                    MDTextField:
+                        id: modify_group_destination_address
+                        halign: "center"
+                        size_hint_x: .6
+                        size_hint_y: .1
+                        pos_hint: {'top': 0.7, 'center_x': 0.5}
+                        hint_text: 'New group destination address'
+                        mode: "line"
+                        color_mode: 'accent'
+                        icon_right: 'onepassword'
+                    MDTextField:
+                        id: modify_group_destination_city
+                        halign: "center"
+                        size_hint_x: .6
+                        size_hint_y: .1
+                        pos_hint: {'top': 0.6, 'center_x': 0.5}
+                        hint_text: 'New group destination city'
+                        mode: "line"
+                        color_mode: 'accent'
+                        icon_right: 'onepassword'
+                    MDFillRoundFlatButton:
+                        pos_hint: {'top': 0.5, 'center_x': 0.5}
+                        size_hint_x: .7
+                        size_hint_y: .05
+                        text:'Change group destination address'
+                        on_press: root.modify_group_destination()
 
         MDNavigationDrawer:
             type: "standard"

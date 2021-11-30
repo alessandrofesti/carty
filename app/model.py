@@ -18,7 +18,6 @@ import traceback
 # country = 'Italia'
 
 # TODO:
-#   - gestire le location non geolocalizzate bene, ora non funzia
 #   - aggiungere distanza
 
 def get_latlon_fromaddress(address, city):

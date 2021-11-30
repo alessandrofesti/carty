@@ -15,6 +15,7 @@ from kivymd.uix.list import OneLineIconListItem, MDList
 from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.app import MDApp
+from kivymd.uix.button.button import MDRectangleFlatIconButton
 
 from kivy.uix.screenmanager import ScreenManager, Screen
 
@@ -306,8 +307,26 @@ class MainScreen(Screen):
             text=f"Group destination: [b]{self.destination_address} ({self.destination_city})[/b]",
             pos_hint={'top': 0.9, 'center_x': 0.5})
 
+        # Add button to modify group destination
+        self.changedestinationbutton = MDIconButton(
+            icon="account-edit",
+            pos_hint={'top': 0.9, 'center_x': 0.95},
+            on_press=self.go_to_modify_screen
+        )
         self.layout.add_widget(self.pass_label, index=0)
         self.layout.add_widget(self.dest_label, index=0)
+        self.layout.add_widget(self.changedestinationbutton, index=0)
+
+    def go_to_modify_screen(self, *args):
+        self.ids.screen_manager.current = 'screen modify group destination'
+
+    def modify_group_destination(self, *args):
+        self.new_group_destination_address = self.ids.screen_manager.get_screen('screen modify group destination').children[0].children[2].text
+        self.new_group_destination_city = self.ids.screen_manager.get_screen('screen modify group destination').children[0].children[1].text
+        self.ref.child('groups').child(f'{self.group_screen}').child('admin').child("destination address").set(self.new_group_destination_address)
+        self.ref.child('groups').child(f'{self.group_screen}').child('admin').child("destination city").set(self.new_group_destination_city)
+        self.ids.screen_manager.get_screen(self.group_screen).children[0].children[5].text = f'Group destination: [b]{self.new_group_destination_address} ({self.new_group_destination_city})[/b]'
+        self.ids.screen_manager.current = f'{self.group_screen}'
 
     def create_run_data_buttons(self, *args):
         self.layout.add_widget(
@@ -355,7 +374,7 @@ class MainScreen(Screen):
                            text_button='Back',
                            text_button2='Run',
                            dialog_title=f'Attention',
-                           dialog_text='the model considers just the rows checked before',
+                           dialog_text='the model considers just the rows checked before -- WAIT UNTIL THIS ICON DESAPPEARS',
                            action_button2='self.get_run_datatable')
 
     def get_run_datatable(self, *args):
@@ -397,6 +416,9 @@ class MainScreen(Screen):
                                action_button2='')
 
     def run_model(self, *args):
+        r = requests.get('https://5z5t5ge610.execute-api.us-east-2.amazonaws.com//get_shifts',
+                         params=self.input_data
+                         ).json()
         self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
         self.shifts = model.main(distance_matrix=self.distance_matrix, df_geocoded=self.df_geocoded)
         if self.shifts != {}:
@@ -538,7 +560,6 @@ class MainScreen(Screen):
                 self.ref.child('groups').child(group).child('users data').child(f'{self.user.uid}').delete()
 
     def leave_group(self, *args):
-
         self.cancel_user_data_from_group_in_db(group_list=[self.group_screen])
         self.remove_screens()
         self.on_pre_enter()

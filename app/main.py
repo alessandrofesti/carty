@@ -418,9 +418,11 @@ class MainScreen(Screen):
     def run_model(self, *args):
         r = requests.get('https://5z5t5ge610.execute-api.us-east-2.amazonaws.com//get_shifts',
                          params=self.input_data
-                         ).json()
-        self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
-        self.shifts = model.main(distance_matrix=self.distance_matrix, df_geocoded=self.df_geocoded)
+                         )
+        self.shifts, self.df_geocoded = r.json()
+
+        #self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
+        #self.shifts = model.main(distance_matrix=self.distance_matrix, df_geocoded=self.df_geocoded)
         if self.shifts != {}:
             self.output_table_d = self.get_run_datatable_todisplay()
             self.create_output_screen()

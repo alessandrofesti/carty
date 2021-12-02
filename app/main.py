@@ -150,9 +150,6 @@ class MainScreen(Screen):
         self.group_screen = child.text
         self.table = self.get_data_table()
         self.general_layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
-        # TODO: guarda sotto
-        # self.layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
-        # self.layout_buttons = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[1]
         self.layout_user = self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').children[0]
         print(f'current group_screen is {self.group_screen}')
 
@@ -200,14 +197,6 @@ class MainScreen(Screen):
                            dialog_text="So sad you're leaving :( ",
                            action_button2='')
         self.app.DeleteAccount()
-
-    # DYNAMIC CONSTRUCTION
-    # def update_data_table(self, *args):
-    #     self.table = self.get_data_table()
-    #     self.layout.clear_widgets()
-    #     self.create_info_onelinelistitems()
-    #     self.layout.add_widget(self.table)
-    #     self.create_run_data_buttons()
 
     def add_dynamic_screen(self):
         group_screen = Screen(name=f"{self.group_screen}")
@@ -356,9 +345,6 @@ class MainScreen(Screen):
             )
         )
 
-    def df_to_datatable(self):
-        pass
-
     def datatable_to_df(self):
         df_cols = [i[0] for i in self.table.column_data]
         if len(self.table.row_data) > 0:
@@ -369,80 +355,85 @@ class MainScreen(Screen):
         return df_tot
 
     def run_simulation(self, *args):
-        self.dialog = None
         self.dialog_button(two_alternatives=True,
                            text_button='Back',
                            text_button2='Run',
-                           dialog_title=f'Attention',
-                           dialog_text='the model considers just the rows checked before -- WAIT UNTIL THIS ICON DESAPPEARS',
+                           dialog_title=f'Run',
+                           dialog_text='The model considers just the rows checked before',
                            action_button2='self.get_run_datatable')
 
     def get_run_datatable(self, *args):
-        #self.create_spinner()
-        #self.change_screen('cappellania')
         self.table_run = self.table.get_row_checks()
-        print('si che sta andando avanti')
-        self.df_run_simulation = self.datatable_to_df()
-        self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
-
-        if len(self.df_run_simulation) > 0:
-            # Get input data
-            self.input_data = {
-                "Name": list(self.df_run_simulation.user),
-                "demands": [1 if ap == 0 else 0 for ap in self.df_run_simulation['avaliable places']],
-                "free_places": list(self.df_run_simulation['avaliable places']),
-                "address": list(self.df_run_simulation['address']),
-                "city": list(self.df_run_simulation['city'])
-            }
-
-            # Update info with destination data
-            self.get_info_group()
-            self.input_data['Name'].append('destination')
-            self.input_data['demands'].append(1)
-            self.input_data['free_places'].append(0)
-            self.input_data['address'].append(self.destination_address)
-            self.input_data['city'].append(self.destination_city)
-
-            # Run model
-            self.run_model()
-
-        else:
-            self.input_data = {}
+        if self.table_run == []:
             self.dialog_button(two_alternatives=False,
-                               text_button='Retry',
-                               text_button2='',
-                               dialog_title=f'Run not possible',
-                               dialog_text='add data to run the model',
+                               text_button='OK',
+                               text_button2="",
+                               dialog_title='No rows selected',
+                               dialog_text="Select rows to run the model",
                                action_button2='')
+        else:
+            print('si che sta andando avanti')
+            self.df_run_simulation = self.datatable_to_df()
+            self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
+
+            if len(self.df_run_simulation) > 0:
+                # Get input data
+                self.input_data = {
+                    "Name": list(self.df_run_simulation.user),
+                    "demands": [1 if ap == 0 else 0 for ap in self.df_run_simulation['avaliable places']],
+                    "free_places": list(self.df_run_simulation['avaliable places']),
+                    "address": list(self.df_run_simulation['address']),
+                    "city": list(self.df_run_simulation['city'])
+                }
+
+                # Update info with destination data
+                self.get_info_group()
+                self.input_data['Name'].append('destination')
+                self.input_data['demands'].append(1)
+                self.input_data['free_places'].append(0)
+                self.input_data['address'].append(self.destination_address)
+                self.input_data['city'].append(self.destination_city)
+
+                # Run model
+                self.run_model()
+
+            else:
+                self.input_data = {}
+                self.dialog_button(two_alternatives=False,
+                                   text_button='Retry',
+                                   text_button2='',
+                                   dialog_title=f'Run not possible',
+                                   dialog_text='add data to run the model',
+                                   action_button2='')
 
     def run_model(self, *args):
+        # API call to AWS lambda
         r = requests.get('https://5z5t5ge610.execute-api.us-east-2.amazonaws.com//get_shifts',
                          params=self.input_data
                          )
         self.shifts, self.df_geocoded = r.json()
+        self.df_geocoded = pd.DataFrame(self.df_geocoded)
 
-        #self.distance_matrix, self.df_geocoded = model.get_distance_matrix(input_data=self.input_data)
-        #self.shifts = model.main(distance_matrix=self.distance_matrix, df_geocoded=self.df_geocoded)
-        if self.shifts != {}:
-            self.output_table_d = self.get_run_datatable_todisplay()
-            self.create_output_screen()
-            self.add_output_table_toscreen()
-            self.change_screen(f"Output screen -- {self.group_screen}")
-        else:
-            #print("Exception: {}".format(type(exception).__name__))
-            #print("Exception message: {}".format(exception))
+        if self.shifts == {}:
+            print('problem not solved')
+            self.dialog.dismiss()
             self.dialog_button(two_alternatives=False,
                                text_button='Retry',
                                text_button2='',
                                dialog_title=f'Run not possible',
-                               dialog_text='add data to run the model',
+                               dialog_text='Problem not solvable',
                                action_button2='')
-            #self.change_screen(f"{self.group_screen}")
-        # self.remove_screen_after_run()
+        else:
+            print('problem solved')
+            self.output_table_d = self.get_run_datatable_todisplay()
+            self.create_output_screen()
+            self.add_output_table_toscreen()
+            self.change_screen(f"Output screen -- {self.group_screen}")
 
     def get_run_datatable_todisplay(self):
         self.output_table_final = pd.DataFrame()
         self.df_geocoded_f = self.df_geocoded.loc[self.df_geocoded['lat'] != 'cannot geocode'].reset_index(drop=True)
+
         for index, shift in enumerate(list(self.shifts.keys())[:-1]): # questo perchè non voglio considerare anche la total distance che è l'ultimo elemento della lista
             df_trip = pd.DataFrame(self.shifts[shift], columns=['trip_order'])
             self.output_table_name = [self.df_geocoded_f['Name'][index] for index in df_trip['trip_order']]
@@ -454,7 +445,6 @@ class MainScreen(Screen):
             })
 
             self.output_table_f['order'] = self.output_table_f['order'].astype(str)
-            # self.output_table_f['Distance'] = self.shifts['total_distance'].cumsum(skipna=False)
             self.output_table_f = self.output_table_f.reset_index()
             self.output_table_f['car'] = index
             self.output_table_f = self.output_table_f[['car', 'index', 'order', 'address']] #Distance
@@ -476,18 +466,23 @@ class MainScreen(Screen):
             pos_hint={'top': 0.7, 'center_x': 0.5}
         )
 
+        del self.output_table_final, self.output_table_f
+
         return self.output_table_d
 
     def create_output_screen(self):
         self.output_screen = Screen(name=f"Output screen -- {self.group_screen}")
+
         # Remove output screen if previously created
         if self.output_screen.name in self.ids.screen_manager.screen_names:
             self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(self.output_screen.name))
+
         # Create new output screen
         self.ids.screen_manager.add_widget(self.output_screen)
         self.ids.screen_manager.ids[f"{self.output_screen}"] = weakref.ref(self.output_screen)
 
     def add_output_table_toscreen(self):
+        # Function to create the output layout to show the output data table
         self.layout_output = MDFloatLayout(
             size=(self.width,
                   self.height)
@@ -508,6 +503,7 @@ class MainScreen(Screen):
         self.layout_output.add_widget(self.output_table_d)
 
     def remove_screen_after_run(self):
+        # Remove output screen after leaving it
         self.ids.screen_manager.get_screen('Output screen -- cappellania').on_leave(
             self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen('Output screen -- cappellania'))
         )
@@ -690,7 +686,6 @@ class MainScreen(Screen):
     def get_group_data(self):
         group_path = self.ref.child('groups').child(f'{self.group_screen}').child('users data').get()
         df_list = []
-        # TODO: perchè funzioni bene c'è bisogno che quando un utente viene eliminato anche tutti i dati dipendenti dal suo uid vengano eliminati
         for uid in group_path.keys():
             if uid != "admin":
                 user = auth.get_user(uid)
@@ -733,6 +728,8 @@ class MainScreen(Screen):
                       dialog_text: str,
                       action_button2: str):
 
+        if self.dialog:
+            self.dialog = None
         if two_alternatives is True:
             if not self.dialog:
                 self.dialog = MDDialog(title=dialog_title,

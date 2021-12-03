@@ -25,11 +25,16 @@ import json
 from kivymd.uix.list import OneLineListItem
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.dialog import MDDialog
+from kivymd.uix.progressbar.progressbar import MDProgressBar
 
 # buildozer -v android clean
 
+from kivy.clock import mainthread
+import threading
+
 from functions import load_kv
 from kivymd.uix.spinner import MDSpinner
+from kivymd.uix.banner.banner import MDBanner
 
 # callbacks
 # access widgets by ids
@@ -354,23 +359,46 @@ class MainScreen(Screen):
 
         return df_tot
 
+    def create_banner(self):
+        self.banner_no_solution = MDBanner(
+            text=["[b]Problem not solvable[/b]",
+                  "  - select all the people you want to include",
+                  "  - check if there are enough places for those who need them"],
+            type="three-line",
+            icon="account-alert",
+            vertical_pad=self.ids.toolbar.height,
+            over_widget=self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].children[-1],
+            # right_action=["CLOSE", lambda x: self.banner.hide()]
+            closing_time=0.15
+            )
+        self.ids.screen_manager.get_screen(f"{self.group_screen}").add_widget(self.banner_no_solution)
+
+    def create_run_spinner(self):
+        self.loading_spinner = MDSpinner(
+              size_hint = [None, None],
+              size= [dp(48), dp(48)],
+              pos_hint={'center_x': .5, 'center_y': .5},
+              active=False)
+        self.ids.screen_manager.get_screen(f"{self.group_screen}").add_widget(self.loading_spinner)
+
+    @mainthread
+    def spinner_toggle(self):
+        print('Spinner Toggle')
+        if self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active == False:
+            self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = True
+        else:
+            self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = False
+
     def run_simulation(self, *args):
-        self.dialog_button(two_alternatives=True,
-                           text_button='Back',
-                           text_button2='Run',
-                           dialog_title=f'Run',
-                           dialog_text='The model considers just the rows checked before',
-                           action_button2='self.get_run_datatable')
+        self.create_banner()
+        self.create_run_spinner()
+        self.spinner_toggle()
+        threading.Thread(target=(self.get_run_datatable)).start()
 
     def get_run_datatable(self, *args):
         self.table_run = self.table.get_row_checks()
         if self.table_run == []:
-            self.dialog_button(two_alternatives=False,
-                               text_button='OK',
-                               text_button2="",
-                               dialog_title='No rows selected',
-                               dialog_text="Select rows to run the model",
-                               action_button2='')
+            self.banner_no_solution.show()
         else:
             print('si che sta andando avanti')
             self.df_run_simulation = self.datatable_to_df()
@@ -399,35 +427,29 @@ class MainScreen(Screen):
 
             else:
                 self.input_data = {}
-                self.dialog_button(two_alternatives=False,
-                                   text_button='Retry',
-                                   text_button2='',
-                                   dialog_title=f'Run not possible',
-                                   dialog_text='add data to run the model',
-                                   action_button2='')
+                self.banner_no_solution.show()
 
     def run_model(self, *args):
         # API call to AWS lambda
-        r = requests.get('https://5z5t5ge610.execute-api.us-east-2.amazonaws.com//get_shifts',
-                         params=self.input_data
-                         )
-        self.shifts, self.df_geocoded = r.json()
-        self.df_geocoded = pd.DataFrame(self.df_geocoded)
+        try:
+            r = requests.get('https://5z5t5ge610.execute-api.us-east-2.amazonaws.com//get_shifts',
+                             params=self.input_data
+                             )
+            self.shifts, self.df_geocoded = r.json()
+            self.df_geocoded = pd.DataFrame(self.df_geocoded)
+        except:
+            self.shifts = {}
 
         if self.shifts == {}:
             print('problem not solved')
-            self.dialog.dismiss()
-            self.dialog_button(two_alternatives=False,
-                               text_button='Retry',
-                               text_button2='',
-                               dialog_title=f'Run not possible',
-                               dialog_text='Problem not solvable',
-                               action_button2='')
+            self.spinner_toggle()
+            self.banner_no_solution.show()
         else:
             print('problem solved')
             self.output_table_d = self.get_run_datatable_todisplay()
             self.create_output_screen()
             self.add_output_table_toscreen()
+            self.spinner_toggle()
             self.change_screen(f"Output screen -- {self.group_screen}")
 
     def get_run_datatable_todisplay(self):
@@ -626,13 +648,13 @@ class MainScreen(Screen):
         self.user_groups = self.get_user_groups()
 
     def remove_screens(self):
-        keep_groups = ['scr add group', 'screen profile', 'screen join group']
+        keep_groups = ['scr add group', 'screen join group'] #'screen profile',
         # Drop dynaically created screens
         for screen in self.ids.screen_manager.screen_names:
             if screen not in keep_groups:
                 self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(screen))
         # Drop dynaically created lists in scrollview
-        keep_scroll_items = ['Profile', 'Join existing group']
+        keep_scroll_items = ['Join existing group'] # 'Profile'
         widgets_toremove = []
         for i, scroll_element in enumerate(self.ids.contentnavigationdrawer.ids.container.children):
             if scroll_element.text not in keep_scroll_items:
@@ -754,10 +776,6 @@ class MainScreen(Screen):
 
     def close_username_dialog(self, *args):
         self.dialog.dismiss()
-
-    def create_spinner(self):
-        self.spinner = MDSpinner(active=True)
-        self.manager.current_screen.add_widget(self.spinner)
 
 
 class LoginScreen(Screen):

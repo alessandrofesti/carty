@@ -16,11 +16,6 @@
         MDList:
             id: container
             OneLineListItem:
-                text: "Profile"
-                on_press:
-                    root.nav_drawer.set_state("close")
-                    root.screen_manager.current = "screen profile"
-            OneLineListItem:
                 text: "Join existing group"
                 on_press:
                     root.nav_drawer.set_state("close")
@@ -196,15 +191,6 @@ ScreenManager:
                         size_hint_y: .05
                         text:'Create new group'
                         on_press: root.create_new_group()
-            MDScreen:
-                id: screen_profile
-                name: "screen profile"
-                MDFloatLayout:
-                    size: root.width, root.height
-                    canvas.before:
-                        Rectangle:
-                            size: self.size
-                            pos: self.pos
 
             MDScreen:
                 id: screen_join_group

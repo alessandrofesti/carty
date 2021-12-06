@@ -64,12 +64,14 @@ from firebase_admin import credentials
 from firebase_admin import db, auth
 from kivy.metrics import dp
 import pandas as pd
+from multiprocessing import Process
 
 # TODO:
 #   Forgot password? check che utente sia reinserito in tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
 #   aggiungi possibilità di modificare indirizzo di destinazione
 #   pulsante run_siulation nell'app che non funziona una seconda volta senza logout
+#   se run attiva impossibile iniziarne una nuova
 
 from kivy.uix.gridlayout import GridLayout
 import json
@@ -361,13 +363,13 @@ class MainScreen(Screen):
 
     def create_banner(self):
         self.banner_no_solution = MDBanner(
-            text=["[b]Problem not solvable[/b]",
+            text=["[b]ALERT: Problem not solvable[/b]",
                   "  - select all the people you want to include",
                   "  - check if there are enough places for those who need them"],
             type="three-line",
             icon="account-alert",
             vertical_pad=self.ids.toolbar.height,
-            over_widget=self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].children[-1],
+            over_widget=self.ids.screen_manager.get_screen(f"{self.group_screen}").children[-1].children[-1],
             # right_action=["CLOSE", lambda x: self.banner.hide()]
             closing_time=0.15
             )
@@ -381,10 +383,17 @@ class MainScreen(Screen):
               active=False)
         self.ids.screen_manager.get_screen(f"{self.group_screen}").add_widget(self.loading_spinner)
 
-    @mainthread
-    def spinner_toggle(self):
-        print('Spinner Toggle')
-        if self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active == False:
+    #@mainthread
+    # def spinner_toggle(self):
+    #     print('Spinner Toggle')
+    #     if self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active == False:
+    #         self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = True
+    #     else:
+    #         self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = False
+
+    def callback_spinner_run(self, *args):
+        # print('--- Callback is working ---')
+        if self.thread1.is_alive() == True:
             self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = True
         else:
             self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = False
@@ -392,8 +401,20 @@ class MainScreen(Screen):
     def run_simulation(self, *args):
         self.create_banner()
         self.create_run_spinner()
-        self.spinner_toggle()
-        threading.Thread(target=(self.get_run_datatable)).start()
+        #self.spinner_toggle()
+
+        # Multithreading
+        self.thread1 = threading.Thread(target=(self.get_run_datatable),
+                                        name="spinner_thread",
+                                        daemon=True)
+        self.thread1.start()
+        Clock.schedule_interval(self.callback_spinner_run, timeout=1.0)
+
+        # Multiprocessing
+        # procs = []
+        # self.proc1 = Process(target=(self.get_run_datatable))
+        # procs.append(self.proc1)
+        # self.proc1.start()
 
     def get_run_datatable(self, *args):
         self.table_run = self.table.get_row_checks()
@@ -442,16 +463,28 @@ class MainScreen(Screen):
 
         if self.shifts == {}:
             print('problem not solved')
-            self.spinner_toggle()
+            # self.spinner_toggle()
             self.banner_no_solution.show()
+            # Join threads
+            # threading.main_thread().join()
+            # self.thread1.join()
         else:
             print('problem solved')
+            # Join threads
+            # threading.main_thread().join()
+            # self.thread1.join()
+            # Display results
             self.output_table_d = self.get_run_datatable_todisplay()
             self.create_output_screen()
             self.add_output_table_toscreen()
-            self.spinner_toggle()
-            self.change_screen(f"Output screen -- {self.group_screen}")
+            # self.spinner_toggle()
+            self.get_output_screen()
 
+    @mainthread
+    def get_output_screen(self, *args):
+        self.change_screen(f"Output screen -- {self.group_screen}")
+
+    @mainthread
     def get_run_datatable_todisplay(self):
         self.output_table_final = pd.DataFrame()
         self.df_geocoded_f = self.df_geocoded.loc[self.df_geocoded['lat'] != 'cannot geocode'].reset_index(drop=True)
@@ -492,6 +525,7 @@ class MainScreen(Screen):
 
         return self.output_table_d
 
+    @mainthread
     def create_output_screen(self):
         self.output_screen = Screen(name=f"Output screen -- {self.group_screen}")
 
@@ -503,6 +537,7 @@ class MainScreen(Screen):
         self.ids.screen_manager.add_widget(self.output_screen)
         self.ids.screen_manager.ids[f"{self.output_screen}"] = weakref.ref(self.output_screen)
 
+    @mainthread
     def add_output_table_toscreen(self):
         # Function to create the output layout to show the output data table
         self.layout_output = MDFloatLayout(
@@ -526,8 +561,8 @@ class MainScreen(Screen):
 
     def remove_screen_after_run(self):
         # Remove output screen after leaving it
-        self.ids.screen_manager.get_screen('Output screen -- cappellania').on_leave(
-            self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen('Output screen -- cappellania'))
+        self.ids.screen_manager.get_screen(f'Output screen -- {self.output_screen}').on_leave(
+            self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(f'Output screen -- {self.output_screen}'))
         )
 
     def join_existing_group(self, *args):

@@ -362,6 +362,9 @@ class MainScreen(Screen):
         return df_tot
 
     def create_banner(self):
+        '''
+        This function creates the banner visible if the model doesn't find a solution or if there are problems with the input data
+        '''
         self.banner_no_solution = MDBanner(
             text=["[b]ALERT: Problem not solvable[/b]",
                   "  - select all the people you want to include",
@@ -370,58 +373,107 @@ class MainScreen(Screen):
             icon="account-alert",
             vertical_pad=self.ids.toolbar.height,
             over_widget=self.ids.screen_manager.get_screen(f"{self.group_screen}").children[-1].children[-1],
-            # right_action=["CLOSE", lambda x: self.banner.hide()]
             closing_time=0.15
             )
         self.ids.screen_manager.get_screen(f"{self.group_screen}").add_widget(self.banner_no_solution)
 
     def create_run_spinner(self):
-        self.loading_spinner = MDSpinner(
-              size_hint = [None, None],
-              size= [dp(48), dp(48)],
+        '''
+        This function creates the spinner visible while the model is running
+        '''
+        self.loading_spinner=MDSpinner(
+              size_hint=[None, None],
+              size=[dp(48), dp(48)],
               pos_hint={'center_x': .5, 'center_y': .5},
               active=False)
         self.ids.screen_manager.get_screen(f"{self.group_screen}").add_widget(self.loading_spinner)
 
-    #@mainthread
-    # def spinner_toggle(self):
-    #     print('Spinner Toggle')
-    #     if self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active == False:
-    #         self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = True
-    #     else:
-    #         self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = False
-
+    @mainthread
     def callback_spinner_run(self, *args):
-        # print('--- Callback is working ---')
+        '''
+        The spinner works only if the thread1, which is the run pipeline of the model, works as well
+        '''
+        print(f'thread is alive: {self.thread1.is_alive()}')
         if self.thread1.is_alive() == True:
+            print(f'--- Spinner is active: {self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active} ---')
             self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = True
         else:
             self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = False
 
+    def callback_model_run(self, *args):
+        '''
+        This callback function runs the pipeline_output if the thread of the running pipeline has finished.
+        Finishing the model thread brings the output pipeline on the main thread so that the graphic can be shown (not feasable outside the main thread)
+        '''
+        print(f'--- Model thread is alive: {self.thread1.is_alive()} ---')
+        print(f'--- Callback already called: {self.model_called } ---')
+        if self.thread1.is_alive() == False and self.model_called == False:
+            self.pipeline_output_model()
+            self.model_called = True
+
     def run_simulation(self, *args):
+        '''
+        the simulation is composed of:
+        - creating banner to show if simulation has problems
+        - creating a new thread to show the loading spinner while the model is running using a clock scheduled to run every second
+        - Another clock checks if the run has finished so the output part (not feasable aoutside the main thread) can be done
+        - the self.model_called = False prevents the clock from running repeatetly the model
+        '''
         self.create_banner()
         self.create_run_spinner()
-        #self.spinner_toggle()
 
-        # Multithreading
-        self.thread1 = threading.Thread(target=(self.get_run_datatable),
-                                        name="spinner_thread",
-                                        daemon=True)
+        self.thread1 = threading.Thread(target=(self.pipeline_run_model),
+                                        name="run_thread")
         self.thread1.start()
-        Clock.schedule_interval(self.callback_spinner_run, timeout=1.0)
+        self.event_spinnder_run = Clock.schedule_interval(self.callback_spinner_run, timeout=1.0)
+        self.event_spinnder_run()
 
-        # Multiprocessing
-        # procs = []
-        # self.proc1 = Process(target=(self.get_run_datatable))
-        # procs.append(self.proc1)
-        # self.proc1.start()
+        # To not call the model multiple times using the clock
+        self.model_called = False
+        self.event_model_run = Clock.schedule_interval(self.callback_model_run, timeout=1.0)
+        self.event_model_run()
+
+    def drop_clock_events(self, *args):
+        '''
+        drop clock events once the run has finished
+        '''
+        self.event_spinnder_run.cancel()
+        self.event_model_run.cancel()
+
+    def pipeline_run_model(self, *args):
+        '''
+        The pipeline_run creates the table from the input data and runs the model calling the AWS lambda function
+        '''
+        self.get_run_datatable()
+
+        # Run model
+        if self.input_data != {}:
+            self.run_model()
+
+    def pipeline_output_model(self, *args):
+        '''
+        the pipeline_output gets the results from the model, creates the output table and print it on a new output scren
+        '''
+        if self.shifts == {}:
+            print('problem not solved')
+            self.banner_no_solution.show()
+            self.drop_clock_events()
+        else:
+            print('problem solved')
+            self.output_table_d = self.get_run_datatable_todisplay()
+            self.create_output_screen()
+            self.add_output_table_toscreen()
+            self.drop_clock_events()
+            self.get_output_screen()
 
     def get_run_datatable(self, *args):
+        '''
+        This finction returns the input data if correctly inserted, otherwise an empty dict
+        '''
         self.table_run = self.table.get_row_checks()
         if self.table_run == []:
             self.banner_no_solution.show()
         else:
-            print('si che sta andando avanti')
             self.df_run_simulation = self.datatable_to_df()
             self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
 
@@ -442,16 +494,13 @@ class MainScreen(Screen):
                 self.input_data['free_places'].append(0)
                 self.input_data['address'].append(self.destination_address)
                 self.input_data['city'].append(self.destination_city)
-
-                # Run model
-                self.run_model()
-
             else:
                 self.input_data = {}
-                self.banner_no_solution.show()
 
     def run_model(self, *args):
-        # API call to AWS lambda
+        '''
+        Funtion to call the AWS lambda function: it returns an empty dict if not feasable
+        '''
         try:
             r = requests.get('https://5z5t5ge610.execute-api.us-east-2.amazonaws.com//get_shifts',
                              params=self.input_data
@@ -461,31 +510,13 @@ class MainScreen(Screen):
         except:
             self.shifts = {}
 
-        if self.shifts == {}:
-            print('problem not solved')
-            # self.spinner_toggle()
-            self.banner_no_solution.show()
-            # Join threads
-            # threading.main_thread().join()
-            # self.thread1.join()
-        else:
-            print('problem solved')
-            # Join threads
-            # threading.main_thread().join()
-            # self.thread1.join()
-            # Display results
-            self.output_table_d = self.get_run_datatable_todisplay()
-            self.create_output_screen()
-            self.add_output_table_toscreen()
-            # self.spinner_toggle()
-            self.get_output_screen()
-
-    @mainthread
     def get_output_screen(self, *args):
         self.change_screen(f"Output screen -- {self.group_screen}")
 
-    @mainthread
     def get_run_datatable_todisplay(self):
+        '''
+        This function transforms the model output into the MDDataTable to display on the output screen
+        '''
         self.output_table_final = pd.DataFrame()
         self.df_geocoded_f = self.df_geocoded.loc[self.df_geocoded['lat'] != 'cannot geocode'].reset_index(drop=True)
 
@@ -512,6 +543,7 @@ class MainScreen(Screen):
         column_data = list(self.output_table_final.columns)
         column_data = [(x, dp(60)) for x in column_data]
         row_data = self.output_table_final.to_records(index=False)
+
         self.output_table_d = MDDataTable(
             column_data=column_data,
             row_data=row_data,
@@ -525,8 +557,11 @@ class MainScreen(Screen):
 
         return self.output_table_d
 
-    @mainthread
     def create_output_screen(self):
+        '''
+        This function creates a new output screen for the run model, if another run has been implemented before
+        it drops the previous one
+        '''
         self.output_screen = Screen(name=f"Output screen -- {self.group_screen}")
 
         # Remove output screen if previously created
@@ -537,8 +572,10 @@ class MainScreen(Screen):
         self.ids.screen_manager.add_widget(self.output_screen)
         self.ids.screen_manager.ids[f"{self.output_screen}"] = weakref.ref(self.output_screen)
 
-    @mainthread
     def add_output_table_toscreen(self):
+        '''
+        This function appends the final output table to the output screen previously created
+        '''
         # Function to create the output layout to show the output data table
         self.layout_output = MDFloatLayout(
             size=(self.width,
@@ -560,7 +597,10 @@ class MainScreen(Screen):
         self.layout_output.add_widget(self.output_table_d)
 
     def remove_screen_after_run(self):
-        # Remove output screen after leaving it
+        '''
+        This function removes the output screen after leaving it
+        '''
+        #
         self.ids.screen_manager.get_screen(f'Output screen -- {self.output_screen}').on_leave(
             self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(f'Output screen -- {self.output_screen}'))
         )

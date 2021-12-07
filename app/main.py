@@ -321,7 +321,7 @@ class MainScreen(Screen):
         self.new_group_destination_city = self.ids.screen_manager.get_screen('screen modify group destination').children[0].children[1].text
         self.ref.child('groups').child(f'{self.group_screen}').child('admin').child("destination address").set(self.new_group_destination_address)
         self.ref.child('groups').child(f'{self.group_screen}').child('admin').child("destination city").set(self.new_group_destination_city)
-        self.ids.screen_manager.get_screen(self.group_screen).children[0].children[5].text = f'Group destination: [b]{self.new_group_destination_address} ({self.new_group_destination_city})[/b]'
+        self.ids.screen_manager.get_screen(self.group_screen).children[-1].children[5].text = f'Group destination: [b]{self.new_group_destination_address} ({self.new_group_destination_city})[/b]'
         self.ids.screen_manager.current = f'{self.group_screen}'
 
     def create_run_data_buttons(self, *args):

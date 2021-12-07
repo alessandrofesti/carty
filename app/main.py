@@ -15,19 +15,14 @@ from kivymd.uix.list import OneLineIconListItem, MDList
 from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.app import MDApp
-from kivymd.uix.button.button import MDRectangleFlatIconButton
 
 from kivy.uix.screenmanager import ScreenManager, Screen
 
 import requests
 import yaml
-import json
 from kivymd.uix.list import OneLineListItem
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.progressbar.progressbar import MDProgressBar
-
-# buildozer -v android clean
 
 from kivy.clock import mainthread
 import threading
@@ -64,21 +59,14 @@ from firebase_admin import credentials
 from firebase_admin import db, auth
 from kivy.metrics import dp
 import pandas as pd
-from multiprocessing import Process
 
 # TODO:
 #   Forgot password? check che utente sia reinserito in tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
-#   aggiungi possibilità di modificare indirizzo di destinazione
-#   pulsante run_siulation nell'app che non funziona una seconda volta senza logout
 #   se run attiva impossibile iniziarne una nuova
 
-from kivy.uix.gridlayout import GridLayout
 import json
-import pdb
 
-import model
-from model import get_distance_matrix, main
 
 if not firebase_admin._apps:
     cred = credentials.Certificate("./carty-7373e-firebase-adminsdk-vuzij-94930417b9.json")

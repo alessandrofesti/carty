@@ -36,7 +36,7 @@ version = 0.2
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.8.11,kivy==2.0.0,https://github.com/kivymd/KivyMD/archive/master.zip,firebase_admin==5.0.2,cachetools,google-cloud,google-cloud-storage,android,requests==2.26.0,simplejson,openssl,pillow,validate_email==1.3,urllib3==1.26.6,charset-normalizer,chardet,idna,certifi,requests_oauthlib,oauthlib,google-auth,pyasn1,pyasn1_modules,cryptography,google-api-python-client,openssl,httplib2,pyparsing,protobuf,google-api-core,cachecontrol,rsa,jwt,msgpack,pyyaml
+requirements = python3==3.8.11,setuptools==57.3.0,kivy==2.0.0,firebase_admin==5.0.2,cachetools,google-cloud,google-cloud-storage,android,requests==2.26.0,simplejson,openssl,pillow,urllib3==1.26.6,charset-normalizer,chardet,idna,certifi,requests_oauthlib,oauthlib,google-auth,pyasn1,pyasn1_modules,cryptography,google-api-python-client,openssl,httplib2,pyparsing,protobuf,google-api-core,cachecontrol,rsa,jwt,msgpack,pyyaml,autoconf,pandas==1.0.3,python-gettext,https://github.com/kivymd/KivyMD/archive/master.zip
 
 # (str) Custom source folders for requirements
 # requirements.source.kivy = ../../kivy
@@ -231,8 +231,8 @@ android.arch = armeabi-v7a
 # (str) python-for-android fork to use, defaults to upstream (kivy)
 #p4a.fork = kivy
 
-# (str) python-for-android branch to use, defaults to master
-#p4a.branch = master
+# (str) python-for-android branch to use, defaults to master (maybe to change to develop)
+p4a.branch = master
 
 # (str) python-for-android git clone directory (if empty, it will be automatically cloned from github)
 #p4a.source_dir =

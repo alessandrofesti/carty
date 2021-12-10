@@ -16,8 +16,6 @@ from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.app import MDApp
 
-from kivy.uix.screenmanager import ScreenManager, Screen
-
 import requests
 import yaml
 from kivymd.uix.list import OneLineListItem
@@ -26,10 +24,21 @@ from kivymd.uix.dialog import MDDialog
 
 from kivy.clock import mainthread
 import threading
+import json
 
-from functions import load_kv
 from kivymd.uix.spinner import MDSpinner
 from kivymd.uix.banner.banner import MDBanner
+import os
+
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.lang import Builder
+
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db, auth
+from kivy.metrics import dp
+import pandas as pd
+
 
 # callbacks
 # access widgets by ids
@@ -40,12 +49,13 @@ from kivymd.uix.banner.banner import MDBanner
 # adb devices -l per vedere i dispositivi connessi al pc
 
 # debug buildozer
-# adb devices
-# adb install -r bin/*.apk
-# echo 'Please connect on transfer files mode the cellphone'
-# adb logcat -s "python"
-# buildozer -v android clean
-# buildozer android debug
+# adb devices -- check all android connected devices
+# buildozer -v android clean -- clean previous installation
+# buildozer android debug deploy run logcat -- to run directly on the phone and see the logs
+# buildozer android debug -- create apk
+# adb install -r bin/*.apk -- install apk on mobile
+# adb logcat -s "python" -- check the logs of the mobile on pc if mobile connected to pc
+# debugger carino https://kivy.org/doc/stable/api-kivy.modules.webdebugger.html
 
 # Get total memory used
 # import os, psutil
@@ -54,18 +64,11 @@ from kivymd.uix.banner.banner import MDBanner
 
 # Ortools debugging: gdb -ex r --args python main.py
 
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db, auth
-from kivy.metrics import dp
-import pandas as pd
-
 # TODO:
 #   Forgot password? check che utente sia reinserito in tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
 #   se run attiva impossibile iniziarne una nuova
 
-import json
 
 
 if not firebase_admin._apps:
@@ -81,22 +84,17 @@ if not firebase_admin._apps:
 ref = db.reference('/')
 # ref.set(db_schema)
 
-# debugger carino https://kivy.org/doc/stable/api-kivy.modules.webdebugger.html
-
-
-import time
-
+def load_kv(file):
+    return Builder.load_file(os.path.join(file))
 
 def load_yaml(file_yaml: str):
     with open(file_yaml, "r") as yamlfile:
         data = yaml.safe_load(yamlfile)[0]
     return data
 
-
 class ContentNavigationDrawer(MDBoxLayout):
     screen_manager = ObjectProperty()
     nav_drawer = ObjectProperty()
-
 
 class HelloScreen(Screen):
     def on_enter(self, *args):
@@ -105,7 +103,6 @@ class HelloScreen(Screen):
 
     def callbackfun(self, dt):
         self.manager.current = 'login'
-
 
 class MainScreen(Screen):
     def on_pre_enter(self):
@@ -838,7 +835,10 @@ class MainScreen(Screen):
                 self.dialog.open()
 
     def close_username_dialog(self, *args):
-        self.dialog.dismiss()
+        try:
+            self.dialog.dismiss()
+        except:
+            pass
 
 
 class LoginScreen(Screen):

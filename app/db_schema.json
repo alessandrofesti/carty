@@ -1,27 +1,62 @@
 {
-	"groups":
-	{
-		"cappellania": {
-			"admin": {
-				"password": 123456,
-				"destination city": "Bologna",
-				"destination address": "via di casaglia 4"
-			},
-			"group users": {
-				"admin": true,
-				"pAgrjHCEC6XC4SwJ1x006mFFdDt2": true
-			},
-			"users data": {
-				"admin": {
-					"address": "casa",
-					"avaliable_places": 0
-				},
-				"pAgrjHCEC6XC4SwJ1x006mFFdDt2": {
-					"city": "Bologna",
-					"address": "via oslavia 5",
-					"avaliable places": 5
-				}
-			}
-		}
-	}
+  "groups" : {
+    "cappellania" : {
+      "admin" : {
+        "destination address" : "via di casaglia 4",
+        "destination city" : "Bologna",
+        "password" : 123456
+      },
+      "group users" : {
+        "0Q5WSlpaJoYlPtEM8OnVq4jrGVI2" : true,
+        "1VOKXjZCAheUVdCpKY1xWOQ6tYt2" : true,
+        "3hTgc561IENbTnJH6uRCJasneAd2" : true,
+        "KN2AHNJr99X75bcyrK5FTaaatzw1" : true,
+        "XAmWFLEZXTRzuaiFIO04yR3G4tF3" : true,
+        "admin" : true,
+        "pAgrjHCEC6XC4SwJ1x006mFFdDt2" : true,
+        "uBf2D93icsdQw5u8ymqIophtiCY2" : true
+      },
+      "users data" : {
+        "0Q5WSlpaJoYlPtEM8OnVq4jrGVI2" : {
+          "address" : "Via Oslavia 3",
+          "avaliable places" : "3",
+          "city" : "Bologna"
+        },
+        "1VOKXjZCAheUVdCpKY1xWOQ6tYt2" : {
+          "address" : "Via del cardo 1",
+          "avaliable places" : "0",
+          "city" : "Bologna"
+        },
+        "3hTgc561IENbTnJH6uRCJasneAd2" : {
+          "address" : "Via Rizzoli 1",
+          "avaliable places" : "0",
+          "city" : "Bologna"
+        },
+        "KN2AHNJr99X75bcyrK5FTaaatzw1" : {
+          "address" : "Via del Giacinto 3",
+          "avaliable places" : "0",
+          "city" : "Bologna"
+        },
+        "XAmWFLEZXTRzuaiFIO04yR3G4tF3" : {
+          "address" : "Via Dante 3",
+          "avaliable places" : "1",
+          "city" : "Bologna"
+        },
+        "admin" : {
+          "address" : "casa",
+          "avaliable_places" : 0
+        },
+        "pAgrjHCEC6XC4SwJ1x006mFFdDt2" : {
+          "address" : "via oslavia 5",
+          "avaliable places" : 5,
+          "city" : "Bologna"
+        },
+        "uBf2D93icsdQw5u8ymqIophtiCY2" : {
+          "address" : "Via Siepelunga 5",
+          "avaliable places" : "2",
+          "city" : "Bologna"
+        }
+      }
+    }
+  }
 }

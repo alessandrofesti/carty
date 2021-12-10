@@ -111,7 +111,7 @@ ScreenManager:
                             pos: self.pos
                     MDIconButton:
                         icon: 'dice-multiple'
-                        user_font_size : 40
+                        user_font_size: "45sp"
                         theme_text_color: "Custom"
                         text_color: app.theme_cls.primary_color
                         pos_hint: {'top': 0.95, 'center_x': 0.5}
@@ -203,7 +203,7 @@ ScreenManager:
                             pos: self.pos
                     MDIconButton:
                         icon: 'dice-multiple'
-                        user_font_size : 40
+                        user_font_size: "45sp"
                         theme_text_color: "Custom"
                         text_color: app.theme_cls.primary_color
                         pos_hint: {'top': 0.9, 'center_x': 0.5}
@@ -244,7 +244,7 @@ ScreenManager:
                             pos: self.pos
                     MDIconButton:
                         icon: 'dice-multiple'
-                        user_font_size : 40
+                        user_font_size: "45sp"
                         theme_text_color: "Custom"
                         text_color: app.theme_cls.primary_color
                         pos_hint: {'top': 0.9, 'center_x': 0.5}
@@ -294,10 +294,10 @@ ScreenManager:
                 pos: self.pos
         MDIconButton:
             icon: 'dice-multiple'
-            user_font_size : 40
+            user_font_size: "45sp"
             theme_text_color: "Custom"
             text_color: app.theme_cls.primary_color
-            pos_hint: {'top': 0.8, 'center_x': 0.5}
+            pos_hint: {'top': 0.85, 'center_x': 0.5}
         MDTextField:
             id:login_email
             halign: "center"
@@ -327,13 +327,14 @@ ScreenManager:
                 app.login()
         MDTextButton:
             text: 'Create an account'
-            pos_hint: {'top': 0.3, 'center_x': 0.4}
+            pos_hint: {'top': 0.3, 'center_x': 0.5}
+            font_size: "14sp"
             on_press:
                 root.manager.current = 'signup'
-                root.manager.transition.direction = 'up'
         MDTextButton:
             text: 'Forgot password'
-            pos_hint: {'top': 0.3, 'center_x': 0.6}
+            pos_hint: {'top': 0.25, 'center_x': 0.5}
+            font_size: "14sp"
             on_press:
                 root.manager.current = 'resetpassword'
 
@@ -349,7 +350,7 @@ ScreenManager:
                 pos: self.pos
         MDIconButton:
             icon: 'dice-multiple'
-            user_font_size : 40
+            user_font_size: "45sp"
             theme_text_color: "Custom"
             text_color: app.theme_cls.primary_color
             pos_hint: {'top': 0.9, 'center_x': 0.5}
@@ -395,7 +396,6 @@ ScreenManager:
             pos_hint: {'top': 0.3, 'center_x': 0.5}
             on_press:
                 root.manager.current = 'login'
-                root.manager.transition.direction = 'up'
 
 <InputScreen>:
     id: input
@@ -428,10 +428,10 @@ ScreenManager:
                 pos: self.pos
         MDIconButton:
             icon: 'dice-multiple'
-            user_font_size : 40
+            user_font_size: "45sp"
             theme_text_color: "Custom"
             text_color: app.theme_cls.primary_color
-            pos_hint: {'top': 0.8, 'center_x': 0.5}
+            pos_hint: {'top': 0.95, 'center_x': 0.5}
         MDTextField:
             id:reset_email
             halign: "center"
@@ -455,7 +455,6 @@ ScreenManager:
             pos_hint: {'top': 0.35, 'center_x': 0.5}
             on_press:
                 root.manager.current = 'login'
-                root.manager.transition.direction = 'up'
 
 <LoadingScreen>:
     id: loading_screen

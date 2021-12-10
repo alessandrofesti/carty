@@ -25,6 +25,7 @@ from kivymd.uix.dialog import MDDialog
 from kivy.clock import mainthread
 import threading
 import json
+from firebase_admin import db, auth, credentials, initialize_app
 
 from kivymd.uix.spinner import MDSpinner
 from kivymd.uix.banner.banner import MDBanner
@@ -33,20 +34,12 @@ import os
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
 
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db, auth
 from kivy.metrics import dp
 import pandas as pd
+import firebase_admin
 
+from kivy.core.window import Window
 
-# callbacks
-# access widgets by ids
-# authentication using fb, google and others
-# screenmanager
-# SDK firebase admin: https://console.firebase.google.com/u/0/project/carty-7373e/settings/serviceaccounts/adminsdk?hl=it
-# password dimenticata e altri tool: https://stackoverflow.com/questions/54995334/firebase-admin-python-sending-password-reset-email
-# adb devices -l per vedere i dispositivi connessi al pc
 
 # debug buildozer
 # adb devices -- check all android connected devices
@@ -69,28 +62,9 @@ import pandas as pd
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
 #   se run attiva impossibile iniziarne una nuova
 
+# TODO: to cancel this
+#Window.size = (400, 800)
 
-
-if not firebase_admin._apps:
-    cred = credentials.Certificate("./carty-7373e-firebase-adminsdk-vuzij-94930417b9.json")
-    # firebase_admin.delete_app(firebase_admin.get_app())
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': 'https://carty-7373e-default-rtdb.europe-west1.firebasedatabase.app/'
-    })
-
-# with open("./db_schema.json", "r") as f:
-#     db_schema = json.load(f)
-
-ref = db.reference('/')
-# ref.set(db_schema)
-
-def load_kv(file):
-    return Builder.load_file(os.path.join(file))
-
-def load_yaml(file_yaml: str):
-    with open(file_yaml, "r") as yamlfile:
-        data = yaml.safe_load(yamlfile)[0]
-    return data
 
 class ContentNavigationDrawer(MDBoxLayout):
     screen_manager = ObjectProperty()
@@ -98,28 +72,20 @@ class ContentNavigationDrawer(MDBoxLayout):
 
 class HelloScreen(Screen):
     def on_enter(self, *args):
-        print("on Enter")
-        Clock.schedule_once(self.callbackfun, 3)
+        Clock.schedule_once(self.login_callback, 4)
 
-    def callbackfun(self, dt):
+    def login_callback(self, dt):
         self.manager.current = 'login'
 
 class MainScreen(Screen):
     def on_pre_enter(self):
-        # TODO: including spinner
-        # self.on_pre_enter_funcs()
-        # x = threading.Thread(target=self.on_pre_enter_funcs, daemon=True).start()
-        # y = threading.Thread(target=self.get_main_spinner, daemon=True)
-        # y.start()
-
-        # Customize toolbar
         self.user = self.get_user()
         self.app = Test.get_running_app()
         self.ref = self.app.ref
         self.ids.toolbar.title = self.user.display_name
-        self.ids.toolbar.ids.label_title.font_size = 20
+        self.ids.toolbar.ids.label_title.font_size = 30
+        self.ids.toolbar.minimum_height = 5
         self.user_groups = self.get_user_groups()
-        # self.dialog_button = Test.dialog_button
         self.cloclose_username_dialog = Test.close_username_dialog
         self.dialog = None
 
@@ -143,7 +109,7 @@ class MainScreen(Screen):
         self.table = self.get_data_table()
         self.general_layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
         self.layout_user = self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').children[0]
-        print(f'current group_screen is {self.group_screen}')
+        # print(f'current group_screen is {self.group_screen}')
 
     def change_screen_scrollview(self, child):
         self.usage_main(child=child)
@@ -314,7 +280,7 @@ class MainScreen(Screen):
             MDFillRoundFlatButton(
                 text="Add your data",
                 line_color=(1, 0, 1, 1),
-                pos_hint={'top': 0.1, 'center_x': 0.3},
+                pos_hint={'top': 0.1, 'center_x': 0.15},
                 on_press=lambda x: self.change_screen(f'Add user -- {self.group_screen}')
             )
         )
@@ -332,7 +298,7 @@ class MainScreen(Screen):
             MDFillRoundFlatButton(
                 text="Leave group",
                 line_color=(1, 0, 1, 1),
-                pos_hint={'top': 0.1, 'center_x': 0.7},
+                pos_hint={'top': 0.1, 'center_x': 0.85},
                 on_press=self.leave_group
             )
         )
@@ -378,9 +344,9 @@ class MainScreen(Screen):
         '''
         The spinner works only if the thread1, which is the run pipeline of the model, works as well
         '''
-        print(f'thread is alive: {self.thread1.is_alive()}')
+        # print(f'thread is alive: {self.thread1.is_alive()}')
         if self.thread1.is_alive() == True:
-            print(f'--- Spinner is active: {self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active} ---')
+            # print(f'--- Spinner is active: {self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active} ---')
             self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = True
         else:
             self.ids.screen_manager.get_screen(f"{self.group_screen}").children[0].active = False
@@ -390,8 +356,8 @@ class MainScreen(Screen):
         This callback function runs the pipeline_output if the thread of the running pipeline has finished.
         Finishing the model thread brings the output pipeline on the main thread so that the graphic can be shown (not feasable outside the main thread)
         '''
-        print(f'--- Model thread is alive: {self.thread1.is_alive()} ---')
-        print(f'--- Callback already called: {self.model_called } ---')
+        # print(f'--- Model thread is alive: {self.thread1.is_alive()} ---')
+        # print(f'--- Callback already called: {self.model_called } ---')
         if self.thread1.is_alive() == False and self.model_called == False:
             self.pipeline_output_model()
             self.model_called = True
@@ -440,11 +406,11 @@ class MainScreen(Screen):
         the pipeline_output gets the results from the model, creates the output table and print it on a new output scren
         '''
         if self.shifts == {}:
-            print('problem not solved')
+            # print('problem not solved')
             self.banner_no_solution.show()
             self.drop_clock_events()
         else:
-            print('problem solved')
+            # print('problem solved')
             self.output_table_d = self.get_run_datatable_todisplay()
             self.create_output_screen()
             self.add_output_table_toscreen()
@@ -731,7 +697,8 @@ class MainScreen(Screen):
                 if self.user.uid in self.ref.child('groups').child(f"{group}").child("group users").get().keys():
                     groups.append(group)
             except:
-                print('User not present in this group')
+                #print('User not present in this group')
+                pass
         return groups
 
     def get_update_user_data(self, *args):
@@ -904,6 +871,7 @@ class Test(MDApp):
         self.requests_delete_account = requests_delete_account
         self.app = Test.get_running_app()
         self.dialog = None
+        self.icon = "logo.png"
         super().__init__(**kwargs)
 
     def build(self):
@@ -992,7 +960,7 @@ class Test(MDApp):
                                action_button2='')
 
         else:
-            print(self.signupEmail, self.signupUsername, self.signupPassword)
+            # print(self.signupEmail, self.signupUsername, self.signupPassword)
             details = {
                 'email': self.signupEmail,
                 'password': self.signupPassword,
@@ -1106,15 +1074,45 @@ class Test(MDApp):
         self.dialog.dismiss()
 
 
+def load_kv(file):
+    return Builder.load_file(os.path.join(file))
+
+
+def load_yaml(file_yaml: str):
+    with open(file_yaml, "r") as yamlfile:
+        data = yaml.safe_load(yamlfile)[0]
+    return data
+
+
+def get_carty_db(db_credentials, database_url):
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(db_credentials)
+        # firebase_admin.delete_app(firebase_admin.get_app())
+        initialize_app(cred, {
+            'databaseURL': database_url
+        })
+        # with open("./db_schema.json", "r") as f:
+        #     db_schema = json.load(f)
+        ref = db.reference('/')
+        # ref.set(db_schema)
+        return ref
+
+
 if __name__ == '__main__':
-    # load data
+    # Load data
     data = load_yaml('config.yaml')
     access_db = data['General']['access_db']
     web_apk = data['General']['web_apk']
+    database_url = data['General']['database_url']
+    db_credentials = data['General']['db_credentials']
     requests_signup = data['General']['requests_signup']
     requests_signin = data['General']['requests_signin']
     requests_verify_email = data['General']['requests_verify_email']
     requests_reset_email = data['General']['requests_reset_email']
     requests_delete_account = data['General']['requests_delete_account']
 
+    # Get carty DB
+    ref = get_carty_db(db_credentials, database_url)
+
+    # Run app
     Test().run()

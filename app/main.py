@@ -29,6 +29,7 @@ from firebase_admin import db, auth, credentials, initialize_app
 
 from kivymd.uix.spinner import MDSpinner
 from kivymd.uix.banner.banner import MDBanner
+from kivy.utils import get_color_from_hex
 import os
 
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -61,6 +62,8 @@ from kivy.core.window import Window
 #   Forgot password? check che utente sia reinserito in tutti i gruppi
 #   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
 #   se run attiva impossibile iniziarne una nuova
+#   capisci bene come super.init può funzionare per evitare di ripetere le stesse funzioni in due classi diverse
+#   aggiungi schermata how it works
 
 # TODO: to cancel this
 #Window.size = (400, 800)
@@ -72,7 +75,7 @@ class ContentNavigationDrawer(MDBoxLayout):
 
 class HelloScreen(Screen):
     def on_enter(self, *args):
-        Clock.schedule_once(self.login_callback, 4)
+        Clock.schedule_once(self.login_callback, 3)
 
     def login_callback(self, dt):
         self.manager.current = 'login'
@@ -142,7 +145,7 @@ class MainScreen(Screen):
                            text_button='GO BACK',
                            text_button2="YES, I'M SURE",
                            dialog_title='Are you sure?',
-                           dialog_text='If you delete your account you will loose all your data',
+                           dialog_text='If you delete your account you will lose all your data',
                            action_button2='self.delete_account_and_data')
 
     def delete_account_and_data(self, *args):
@@ -188,7 +191,7 @@ class MainScreen(Screen):
             halign="center",
             size_hint_x=0.6,
             size_hint_y=0.1,
-            hint_text="Number of free places avaliable (0 if none)",
+            hint_text="Avaliable places (0 if none)",
             pos_hint={'top': 0.75, 'center_x': 0.5},
             mode="line"
         )
@@ -236,7 +239,6 @@ class MainScreen(Screen):
 
         # Add data table
         self.table = self.get_data_table()
-        # self.table.bind(on_check_press=self.on_check_press)
         self.layout.add_widget(self.table)
 
     def get_info_group(self):
@@ -319,7 +321,7 @@ class MainScreen(Screen):
         self.banner_no_solution = MDBanner(
             text=["[b]ALERT: Problem not solvable[/b]",
                   "  - select all the people you want to include",
-                  "  - check if there are enough places for those who need them"],
+                  "  - check if there are enough places"],
             type="three-line",
             icon="account-alert",
             vertical_pad=self.ids.toolbar.height,
@@ -400,6 +402,8 @@ class MainScreen(Screen):
         # Run model
         if self.input_data != {}:
             self.run_model()
+        else:
+            self.shifts = {}
 
     def pipeline_output_model(self, *args):
         '''
@@ -409,6 +413,7 @@ class MainScreen(Screen):
             # print('problem not solved')
             self.banner_no_solution.show()
             self.drop_clock_events()
+            self.get_group_screen()
         else:
             # print('problem solved')
             self.output_table_d = self.get_run_datatable_todisplay()
@@ -423,7 +428,8 @@ class MainScreen(Screen):
         '''
         self.table_run = self.table.get_row_checks()
         if self.table_run == []:
-            self.banner_no_solution.show()
+            #self.banner_no_solution.show()
+            self.input_data = {}
         else:
             self.df_run_simulation = self.datatable_to_df()
             self.df_run_simulation['avaliable places'] = self.df_run_simulation['avaliable places'].astype(int)
@@ -460,6 +466,9 @@ class MainScreen(Screen):
             self.df_geocoded = pd.DataFrame(self.df_geocoded)
         except:
             self.shifts = {}
+
+    def get_group_screen(self, *args):
+        self.change_screen(f"{self.group_screen}")
 
     def get_output_screen(self, *args):
         self.change_screen(f"Output screen -- {self.group_screen}")
@@ -500,6 +509,10 @@ class MainScreen(Screen):
             row_data=row_data,
             check=False,
             use_pagination=True,
+            background_color=(0, 1, 0, .3),
+            # background_color_header=get_color_from_hex("#65275d"),
+            # background_color_cell=get_color_from_hex("#451938"),
+            # background_color_selected_cell=get_color_from_hex("e4514f"),
             rows_num=len(self.output_table_final) + 3,
             pos_hint={'top': 0.7, 'center_x': 0.5}
         )
@@ -843,19 +856,6 @@ class DrawerList(ThemableBehavior, MDList):
                 item.text_color = self.theme_cls.text_color
                 break
         instance_item.text_color = self.theme_cls.primary_color
-        # print(f"inst:{instance_item.text_color}", f"thm_txt{self.theme_cls.text_color}",
-        #       f"thm_prm{self.theme_cls.primary_color}")
-
-
-def add_ScreenManager():
-    sm = ScreenManager()
-    sm.add_widget(HelloScreen(name='hello'))
-    sm.add_widget(LoadingScreen(name='loading'))
-    sm.add_widget(MainScreen(name='main'))
-    sm.add_widget(LoginScreen(name='login'))
-    sm.add_widget(SignupScreen(name='signup'))
-    sm.add_widget(InputScreen(name='input'))
-    sm.add_widget(ForgotPasswordScreen(name='resetpassword'))
 
 
 class Test(MDApp):
@@ -872,6 +872,7 @@ class Test(MDApp):
         self.app = Test.get_running_app()
         self.dialog = None
         self.icon = "logo.png"
+        self.add_ScreenManager()
         super().__init__(**kwargs)
 
     def build(self):
@@ -880,6 +881,17 @@ class Test(MDApp):
         self.theme_cls.primary_hue = "300"
         self.theme_cls.accent_palette = "Purple"
         return self.strng
+
+    @staticmethod
+    def add_ScreenManager():
+        sm = ScreenManager()
+        sm.add_widget(HelloScreen(name='hello'))
+        sm.add_widget(LoadingScreen(name='loading'))
+        sm.add_widget(MainScreen(name='main'))
+        sm.add_widget(LoginScreen(name='login'))
+        sm.add_widget(SignupScreen(name='signup'))
+        sm.add_widget(InputScreen(name='input'))
+        sm.add_widget(ForgotPasswordScreen(name='resetpassword'))
 
     def VerifyEmail(self):
         payload = json.dumps({
@@ -922,7 +934,13 @@ class Test(MDApp):
                           params={"key": self.web_apk},
                           data=payload)
         if 'error' in r.json().keys():
-            return {'status': 'error', 'message': r.json()['error']['message']}
+            self.dialog_button(two_alternatives=False,
+                               text_button='OK',
+                               text_button2='',
+                               dialog_title="Reset email",
+                               dialog_text=f"Error; {r.json()['error']['message']}",
+                               action_button2='')
+            #return {'status': 'error', 'message': r.json()['error']['message']}
         else:
             self.dialog_button(two_alternatives=False,
                                text_button='OK',
@@ -932,7 +950,6 @@ class Test(MDApp):
                                action_button2='')
             return r.json()
 
-    add_ScreenManager()
 
     def signup(self):
         self.signupEmail = self.strng.get_screen('signup').ids.signup_email.text

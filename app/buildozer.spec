@@ -45,7 +45,7 @@ requirements = python3==3.8.11,setuptools==57.3.0,kivy==2.0.0,firebase_admin==5.
 #garden_requirements =
 
 # (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
+presplash.filename = "./logo.png"
 
 # (str) Icon of the application
 #icon.filename = %(source.dir)s/data/icon.png

@@ -181,7 +181,7 @@ ScreenManager:
                         size_hint_x: .6
                         size_hint_y: .1
                         pos_hint: {'top': 0.2, 'center_x': 0.5}
-                        hint_text: 'Number of avaliable places you have (you can change it later)'
+                        hint_text: 'Your avaliable places'
                         mode: "line"
                         color_mode: 'accent'
                         icon_right: 'account-group'
@@ -257,7 +257,7 @@ ScreenManager:
                         hint_text: 'New group destination address'
                         mode: "line"
                         color_mode: 'accent'
-                        icon_right: 'onepassword'
+                        icon_right: 'google-maps'
                     MDTextField:
                         id: modify_group_destination_city
                         halign: "center"
@@ -267,7 +267,7 @@ ScreenManager:
                         hint_text: 'New group destination city'
                         mode: "line"
                         color_mode: 'accent'
-                        icon_right: 'onepassword'
+                        icon_right: 'google-maps'
                     MDFillRoundFlatButton:
                         pos_hint: {'top': 0.5, 'center_x': 0.5}
                         size_hint_x: .7
@@ -393,6 +393,7 @@ ScreenManager:
                 app.signup()
         MDTextButton:
             text: 'Login'
+            font_size: "14sp"
             pos_hint: {'top': 0.3, 'center_x': 0.5}
             on_press:
                 root.manager.current = 'login'
@@ -453,6 +454,7 @@ ScreenManager:
         MDTextButton:
             text: 'Login'
             pos_hint: {'top': 0.35, 'center_x': 0.5}
+            font_size: "14sp"
             on_press:
                 root.manager.current = 'login'
 

@@ -64,6 +64,7 @@ from kivy.core.window import Window
 #   se run attiva impossibile iniziarne una nuova
 #   capisci bene come super.init può funzionare per evitare di ripetere le stesse funzioni in due classi diverse
 #   aggiungi schermata how it works
+#   Download output table
 
 # TODO: to cancel this
 #Window.size = (400, 800)
@@ -87,7 +88,8 @@ class MainScreen(Screen):
         self.ref = self.app.ref
         self.ids.toolbar.title = self.user.display_name
         self.ids.toolbar.ids.label_title.font_size = 30
-        self.ids.toolbar.minimum_height = 5
+        #self.ids.toolbar.height = 50
+        self.ids.toolbar.type_height = 'large'
         self.user_groups = self.get_user_groups()
         self.cloclose_username_dialog = Test.close_username_dialog
         self.dialog = None
@@ -181,8 +183,10 @@ class MainScreen(Screen):
         self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').add_widget(self.layout_user)
         dice_icon = MDIconButton(
             icon="dice-multiple",
-            user_font_size=40,
+            user_font_size="45sp",
+            # user_font_size=40,
             theme_text_color="Custom",
+            text_color=self.app.theme_cls.primary_color,
             pos_hint={'top': 0.9, 'center_x': 0.5}
         )
         self.layout_user.add_widget(dice_icon)
@@ -304,6 +308,8 @@ class MainScreen(Screen):
                 on_press=self.leave_group
             )
         )
+
+
 
     def datatable_to_df(self):
         df_cols = [i[0] for i in self.table.column_data]
@@ -591,7 +597,7 @@ class MainScreen(Screen):
                                    action_button2='')
             else:
                 self.dialog_button(two_alternatives=False,
-                                   text_button='OK',
+                                   text_button='',
                                    text_button2='',
                                    dialog_title=f'join succeed',
                                    dialog_text=f'Joined group {self.join_group_name}',
@@ -938,7 +944,7 @@ class Test(MDApp):
                                text_button='OK',
                                text_button2='',
                                dialog_title="Reset email",
-                               dialog_text=f"Error; {r.json()['error']['message']}",
+                               dialog_text=f"Error: {r.json()['error']['message']}",
                                action_button2='')
             #return {'status': 'error', 'message': r.json()['error']['message']}
         else:

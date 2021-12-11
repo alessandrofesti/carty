@@ -48,7 +48,7 @@ requirements = python3==3.8.11,setuptools==57.3.0,kivy==2.0.0,firebase_admin==5.
 presplash.filename = "./logo.png"
 
 # (str) Icon of the application
-#icon.filename = %(source.dir)s/data/icon.png
+icon.filename = "./main_icon.png"
 
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = all

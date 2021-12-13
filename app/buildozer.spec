@@ -7,7 +7,7 @@ title = Carty
 package.name = carty
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.fiester.carty
+package.domain = com.fiester
 
 # (str) Source code where the main.py live
 source.dir = .

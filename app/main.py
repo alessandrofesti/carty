@@ -29,6 +29,7 @@ from firebase_admin import db, auth, credentials, initialize_app, _apps
 
 # TODO:
 #   Download output table as csv or excel
+#   Dropdown menu fa' che diventi grande quanto la schermata
 
 
 class ContentNavigationDrawer(MDBoxLayout):

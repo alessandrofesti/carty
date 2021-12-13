@@ -28,7 +28,7 @@ from firebase_admin import db, auth, credentials, initialize_app, _apps
 
 
 # TODO:
-#   Download output table
+#   Download output table as csv or excel
 
 
 class ContentNavigationDrawer(MDBoxLayout):
@@ -44,6 +44,12 @@ class HelloScreen(Screen):
 
 class MainScreen(Screen):
     def on_pre_enter(self):
+        '''
+        1- creating or updating properties
+        2- dynamic construction of screens and widjet
+        3- creating logic for changing screen
+        '''
+        # creating or updating properties
         self.user = self.get_user()
         self.app = Test.get_running_app()
         self.ref = self.app.ref
@@ -54,7 +60,7 @@ class MainScreen(Screen):
         self.cloclose_username_dialog = Test.close_username_dialog
         self.dialog = None
 
-        # DYNAMIC CONSTRUCTION
+        # dynamic construction of screens and widjet
         for group in self.user_groups:
             self.group_screen = group
             self.add_dynamic_screen()
@@ -63,14 +69,16 @@ class MainScreen(Screen):
             self.create_group_data_to_layout()
             self.create_run_data_buttons()
 
-        # USAGE
+        # creating logic for changing screen
         self.mycallback_scroll()
         self.add_logout_in_scrollview()
         self.add_delete_account_in_scrollview()
         self.ids.screen_manager.current = 'screen howitworks'
 
-    # USAGE
     def usage_main(self, child):
+        '''
+        Impplementing logic to change screens in scrollview given the previous dynamic construction
+        '''
         self.group_screen = child.text
         self.table = self.get_data_table()
         self.general_layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
@@ -268,8 +276,6 @@ class MainScreen(Screen):
                 on_press=self.leave_group
             )
         )
-
-
 
     def datatable_to_df(self):
         df_cols = [i[0] for i in self.table.column_data]
@@ -536,6 +542,12 @@ class MainScreen(Screen):
         )
 
     def join_existing_group(self, *args):
+        '''
+        Function to join an existing group with its password:
+        - it creates the group
+        - appends data to DB
+        - reload everything from the app so the new group appears immediately
+        '''
         self.join_group_name = self.ids.join_group_name.text
         self.join_group_password = self.ids.join_group_password.text
         join_path = self.ref.child('groups').get()

@@ -1,69 +1,33 @@
-from kivy.clock import Clock
-
-from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton
-
-from kivy.properties import ObjectProperty
-from kivymd.uix.textfield import MDTextField
+import requests
 import weakref
-from kivymd.uix.button import MDIconButton
+import yaml
+import threading
+import json
+import os
+import pandas as pd
 
-from kivy.properties import StringProperty, ListProperty
-
+from kivy.clock import Clock, mainthread
+from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDIconButton
+from kivymd.uix.textfield import MDTextField
+from kivy.properties import StringProperty, ListProperty, ObjectProperty
 from kivymd.theming import ThemableBehavior
 from kivymd.uix.list import OneLineIconListItem, MDList
-
 from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.app import MDApp
-
-import requests
-import yaml
 from kivymd.uix.list import OneLineListItem
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.dialog import MDDialog
-
-from kivy.clock import mainthread
-import threading
-import json
-from firebase_admin import db, auth, credentials, initialize_app
-
 from kivymd.uix.spinner import MDSpinner
 from kivymd.uix.banner.banner import MDBanner
-from kivy.utils import get_color_from_hex
-import os
-
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
-
 from kivy.metrics import dp
-import pandas as pd
-import firebase_admin
 
-from kivy.core.window import Window
+from firebase_admin import db, auth, credentials, initialize_app, _apps
 
-
-# debug buildozer
-# adb devices -- check all android connected devices
-# buildozer -v android clean -- clean previous installation
-# buildozer android debug deploy run logcat -- to run directly on the phone and see the logs
-# buildozer android debug -- create apk
-# adb install -r bin/*.apk -- install apk on mobile
-# adb logcat -s "python" -- check the logs of the mobile on pc if mobile connected to pc
-# debugger carino https://kivy.org/doc/stable/api-kivy.modules.webdebugger.html
-
-# Get total memory used
-# import os, psutil
-# process = psutil.Process(os.getpid())
-# print(process.memory_info().rss)  # in bytes
-
-# Ortools debugging: gdb -ex r --args python main.py
 
 # TODO:
-#   Forgot password? check che utente sia reinserito in tutti i gruppi
-#   Cambia tutte le f strings con doppio apice in caso di inserimento stringa con l'apostrofo
-#   se run attiva impossibile iniziarne una nuova
-#   capisci bene come super.init può funzionare per evitare di ripetere le stesse funzioni in due classi diverse
-#   aggiungi schermata how it works
 #   Download output table
 
 
@@ -73,7 +37,7 @@ class ContentNavigationDrawer(MDBoxLayout):
 
 class HelloScreen(Screen):
     def on_enter(self, *args):
-        Clock.schedule_once(self.login_callback, 3)
+        Clock.schedule_once(self.login_callback, 4)
 
     def login_callback(self, dt):
         self.manager.current = 'login'
@@ -84,7 +48,7 @@ class MainScreen(Screen):
         self.app = Test.get_running_app()
         self.ref = self.app.ref
         self.ids.toolbar.title = self.user.display_name
-        self.ids.toolbar.ids.label_title.font_size = "50sp"
+        self.ids.toolbar.ids.label_title.font_size = "23sp"
         self.ids.toolbar.type_height = 'large'
         self.user_groups = self.get_user_groups()
         self.cloclose_username_dialog = Test.close_username_dialog
@@ -1016,12 +980,7 @@ class Test(MDApp):
         try:
             self.user = auth.get_user_by_email(self.loginEmail)
         except:
-            self.dialog_button(two_alternatives=False,
-                               text_button='Retry',
-                               text_button2='',
-                               dialog_title="Error",
-                               dialog_text='Email not recognized',
-                               action_button2='')
+            pass
 
         details = {
             'email': self.loginEmail,
@@ -1104,7 +1063,7 @@ def load_yaml(file_yaml: str):
 
 
 def get_carty_db(db_credentials, database_url):
-    if not firebase_admin._apps:
+    if not _apps:
         cred = credentials.Certificate(db_credentials)
         # firebase_admin.delete_app(firebase_admin.get_app())
         initialize_app(cred, {

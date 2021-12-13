@@ -199,9 +199,8 @@ ScreenManager:
             MDScreen:
                 id: howitworks_screen
                 name: 'screen howitworks'
-                MDBoxLayout:
-                    id: box
-                    orientation: "vertical"
+                MDFloatLayout:
+                    size: root.width, root.height
                     MDIconButton:
                         icon: 'dice-multiple'
                         user_font_size: "45sp"
@@ -209,26 +208,10 @@ ScreenManager:
                         text_color: app.theme_cls.primary_color
                         pos_hint: {'top': 0.85, 'center_x': 0.5}
                     MDLabel:
-                        text:"Carty helps you and your team optimize the car shifts based on the avaliable free places on each car"
+                        text:"Carty helps you and your team optimize the car shifts based on the avaliable free places on each car. Join an existing group (ask any of the members for the password). Create a new group and share the password among friends to let them join it. Insert your Data (address, avaliable free places if any). Run the simulation. Carty will find the optimal solution to share people without car among the existing free places by minimizing the distance each driver has to do to pick up the people"
                         halign:"center"
-                    MDLabel:
-                        text:"Join an existing group (ask any of the members for the password)"
-                        halign:"center"
-                    MDLabel:
-                        text:"Create a new group and share the password among friends to let them join it"
-                        halign:"center"
-                    MDLabel:
-                        text:"Insert your Data (address, avaliable free places if any)"
-                        halign:"center"
-                    MDLabel:
-                        text:"Run the simulation"
-                        halign:"center"
-                    MDLabel:
-                        text:"Carty will find the optimal solution to share people without car among the existing free places"
-                        halign:"center"
-                    MDLabel:
-                        text:"Carty will monimize the distance each driver has to do to pick up the people"
-                        halign:"center"
+                        pos_hint: {'top': 1, 'center_x': 0.5}
+
 
             MDScreen:
                 id: screen_join_group
@@ -357,7 +340,7 @@ ScreenManager:
             color_mode: 'accent'
             icon_right: 'onepassword'
         MDFillRoundFlatButton:
-            pos_hint: {'top': 0.4, 'center_x': 0.5}
+            pos_hint: {'top': 0.45, 'center_x': 0.5}
             size_hint_x: .7
             size_hint_y: .05
             text:'Login'
@@ -365,13 +348,13 @@ ScreenManager:
                 app.login()
         MDTextButton:
             text: 'Create an account'
-            pos_hint: {'top': 0.3, 'center_x': 0.5}
+            pos_hint: {'top': 0.35, 'center_x': 0.5}
             font_size: "14sp"
             on_press:
                 root.manager.current = 'signup'
         MDTextButton:
             text: 'Forgot password'
-            pos_hint: {'top': 0.25, 'center_x': 0.5}
+            pos_hint: {'top': 0.3, 'center_x': 0.5}
             font_size: "14sp"
             on_press:
                 root.manager.current = 'resetpassword'
@@ -423,7 +406,7 @@ ScreenManager:
             color_mode: 'accent'
             icon_right: 'onepassword'
         MDFillRoundFlatButton:
-            pos_hint: {'top': 0.4, 'center_x': 0.5}
+            pos_hint: {'top': 0.45, 'center_x': 0.5}
             size_hint_x: .7
             size_hint_y: .05
             text:'Signup'
@@ -432,7 +415,7 @@ ScreenManager:
         MDTextButton:
             text: 'Login'
             font_size: "14sp"
-            pos_hint: {'top': 0.3, 'center_x': 0.5}
+            pos_hint: {'top': 0.35, 'center_x': 0.5}
             on_press:
                 root.manager.current = 'login'
 
@@ -482,7 +465,7 @@ ScreenManager:
             color_mode: 'accent'
             icon_right: 'email'
         MDFillRoundFlatButton:
-            pos_hint: {'top': 0.5, 'center_x': 0.5}
+            pos_hint: {'top': 0.55, 'center_x': 0.5}
             size_hint_x: .7
             size_hint_y: .05
             text:'Send reset email'
@@ -491,7 +474,7 @@ ScreenManager:
                 root.manager.current = 'login'
         MDTextButton:
             text: 'Login'
-            pos_hint: {'top': 0.4, 'center_x': 0.5}
+            pos_hint: {'top': 0.45, 'center_x': 0.5}
             font_size: "14sp"
             on_press:
                 root.manager.current = 'login'

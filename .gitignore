@@ -1,4 +1,4 @@
-./Model/*
+./Model
 ./Dox
 ./carty_layers
 ./app/config.yaml

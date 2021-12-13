@@ -66,9 +66,6 @@ from kivy.core.window import Window
 #   aggiungi schermata how it works
 #   Download output table
 
-# TODO: to cancel this
-#Window.size = (400, 800)
-
 
 class ContentNavigationDrawer(MDBoxLayout):
     screen_manager = ObjectProperty()
@@ -87,8 +84,7 @@ class MainScreen(Screen):
         self.app = Test.get_running_app()
         self.ref = self.app.ref
         self.ids.toolbar.title = self.user.display_name
-        self.ids.toolbar.ids.label_title.font_size = 30
-        #self.ids.toolbar.height = 50
+        self.ids.toolbar.ids.label_title.font_size = "50sp"
         self.ids.toolbar.type_height = 'large'
         self.user_groups = self.get_user_groups()
         self.cloclose_username_dialog = Test.close_username_dialog
@@ -107,6 +103,7 @@ class MainScreen(Screen):
         self.mycallback_scroll()
         self.add_logout_in_scrollview()
         self.add_delete_account_in_scrollview()
+        self.ids.screen_manager.current = 'screen howitworks'
 
     # USAGE
     def usage_main(self, child):
@@ -114,7 +111,6 @@ class MainScreen(Screen):
         self.table = self.get_data_table()
         self.general_layout = self.ids.screen_manager.get_screen(f'{self.group_screen}').children[0]
         self.layout_user = self.ids.screen_manager.get_screen(f'Add user -- {self.group_screen}').children[0]
-        # print(f'current group_screen is {self.group_screen}')
 
     def change_screen_scrollview(self, child):
         self.usage_main(child=child)
@@ -693,13 +689,13 @@ class MainScreen(Screen):
         self.user_groups = self.get_user_groups()
 
     def remove_screens(self):
-        keep_groups = ['scr add group', 'screen join group'] #'screen profile',
+        keep_groups = ['scr add group', 'screen join group', 'screen howitworks'] #'screen profile',
         # Drop dynaically created screens
         for screen in self.ids.screen_manager.screen_names:
             if screen not in keep_groups:
                 self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(screen))
         # Drop dynaically created lists in scrollview
-        keep_scroll_items = ['Join existing group'] # 'Profile'
+        keep_scroll_items = ['Join existing group', 'screen howitworks'] # 'Profile'
         widgets_toremove = []
         for i, scroll_element in enumerate(self.ids.contentnavigationdrawer.ids.container.children):
             if scroll_element.text not in keep_scroll_items:

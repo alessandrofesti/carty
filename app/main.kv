@@ -16,11 +16,15 @@
         MDList:
             id: container
             OneLineListItem:
+                text: "How it works"
+                on_press:
+                    root.nav_drawer.set_state("close")
+                    root.screen_manager.current = "screen howitworks"
+            OneLineListItem:
                 text: "Join existing group"
                 on_press:
                     root.nav_drawer.set_state("close")
                     root.screen_manager.current = "screen join group"
-
 
 ScreenManager:
     HelloScreen:
@@ -193,6 +197,40 @@ ScreenManager:
                         on_press: root.create_new_group()
 
             MDScreen:
+                id: howitworks_screen
+                name: 'screen howitworks'
+                MDBoxLayout:
+                    id: box
+                    orientation: "vertical"
+                    MDIconButton:
+                        icon: 'dice-multiple'
+                        user_font_size: "45sp"
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.primary_color
+                        pos_hint: {'top': 0.85, 'center_x': 0.5}
+                    MDLabel:
+                        text:"Carty helps you and your team optimize the car shifts based on the avaliable free places on each car"
+                        halign:"center"
+                    MDLabel:
+                        text:"Join an existing group (ask any of the members for the password)"
+                        halign:"center"
+                    MDLabel:
+                        text:"Create a new group and share the password among friends to let them join it"
+                        halign:"center"
+                    MDLabel:
+                        text:"Insert your Data (address, avaliable free places if any)"
+                        halign:"center"
+                    MDLabel:
+                        text:"Run the simulation"
+                        halign:"center"
+                    MDLabel:
+                        text:"Carty will find the optimal solution to share people without car among the existing free places"
+                        halign:"center"
+                    MDLabel:
+                        text:"Carty will monimize the distance each driver has to do to pick up the people"
+                        halign:"center"
+
+            MDScreen:
                 id: screen_join_group
                 name: "screen join group"
                 MDFloatLayout:
@@ -254,7 +292,7 @@ ScreenManager:
                         size_hint_x: .6
                         size_hint_y: .1
                         pos_hint: {'top': 0.7, 'center_x': 0.5}
-                        hint_text: 'New group destination address'
+                        hint_text: 'Group destination address'
                         mode: "line"
                         color_mode: 'accent'
                         icon_right: 'google-maps'
@@ -264,7 +302,7 @@ ScreenManager:
                         size_hint_x: .6
                         size_hint_y: .1
                         pos_hint: {'top': 0.6, 'center_x': 0.5}
-                        hint_text: 'New group destination city'
+                        hint_text: 'Group destination city'
                         mode: "line"
                         color_mode: 'accent'
                         icon_right: 'google-maps'
@@ -432,19 +470,19 @@ ScreenManager:
             user_font_size: "45sp"
             theme_text_color: "Custom"
             text_color: app.theme_cls.primary_color
-            pos_hint: {'top': 0.95, 'center_x': 0.5}
+            pos_hint: {'top': 0.85, 'center_x': 0.5}
         MDTextField:
             id:reset_email
             halign: "center"
             size_hint_x: .6
             size_hint_y: .1
-            pos_hint: {'top': 0.6, 'center_x': 0.5}
+            pos_hint: {'top': 0.65, 'center_x': 0.5}
             hint_text: 'Insert your email address'
             mode: "line"
             color_mode: 'accent'
             icon_right: 'email'
         MDFillRoundFlatButton:
-            pos_hint: {'top': 0.45, 'center_x': 0.5}
+            pos_hint: {'top': 0.5, 'center_x': 0.5}
             size_hint_x: .7
             size_hint_y: .05
             text:'Send reset email'
@@ -453,7 +491,7 @@ ScreenManager:
                 root.manager.current = 'login'
         MDTextButton:
             text: 'Login'
-            pos_hint: {'top': 0.35, 'center_x': 0.5}
+            pos_hint: {'top': 0.4, 'center_x': 0.5}
             font_size: "14sp"
             on_press:
                 root.manager.current = 'login'
@@ -484,6 +522,7 @@ ScreenManager:
         font_style: 'H1'
         font_size: sp(15)
         helper_text_mode: "on_focus"
+
 
 
 

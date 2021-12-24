@@ -1,29 +1,16 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Imagine many people need to go somewhere (party, conference, ...), some of them have their cars while others don't. 
+Imagine that you want to divide the people without a car among the avaliable places of the people who have a car.
+Carty helps you find the optimal division.
 
-### What is this repository for? ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+![Alt text](./README_imgs/header.jpg?raw=true "Title")
 
-### How do I get set up? ###
+### How does it work? ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+* Create your profile
+* Join a group or create a new one
+* Add or modify your data (avaliable places, address of departure)
+* Run the simulation (it optimizes the solution for all the people present in the group)
+* See the results

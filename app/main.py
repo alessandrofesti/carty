@@ -5,6 +5,7 @@ import threading
 import json
 import os
 import pandas as pd
+import webbrowser
 
 from kivy.clock import Clock, mainthread
 from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDIconButton
@@ -541,6 +542,10 @@ class MainScreen(Screen):
         self.ids.screen_manager.get_screen(f'Output screen -- {self.output_screen}').on_leave(
             self.ids.screen_manager.remove_widget(self.ids.screen_manager.get_screen(f'Output screen -- {self.output_screen}'))
         )
+
+    def open_github(self, *args):
+        webbrowser.open('https://github.com/alessandrofesti/carty')
+
 
     def join_existing_group(self, *args):
         '''

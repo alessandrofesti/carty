@@ -2,7 +2,9 @@
 ./Dox
 ./carty_layers
 ./app/config.yaml
+./config.yaml
 ./app/carty-7373e-firebase-adminsdk-vuzij-94930417b9.json
+./carty-7373e-firebase-adminsdk-vuzij-94930417b9.json
 ./app/db_schema.json
 /app/bin/
 /app/.buildozer/

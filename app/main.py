@@ -671,7 +671,11 @@ class MainScreen(Screen):
         self.user_groups = self.get_user_groups()
 
     def remove_screens(self):
-        keep_groups = ['scr add group', 'screen join group', 'screen howitworks'] #'screen profile',
+        '''
+        Function to remove screens when reloading data after a change in dynamic elements (screens, scroll items, ecc...)
+        Add below in keep_groups and keep scroll_items the screens to keep when reloading data: i.e the screens not created dynamically
+        '''
+        keep_groups = ['scr add group', 'screen join group', 'screen howitworks', 'screen modify group destination'] #'screen profile',
         # Drop dynaically created screens
         for screen in self.ids.screen_manager.screen_names:
             if screen not in keep_groups:

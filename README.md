@@ -7,6 +7,9 @@ Imagine that you want to divide the people without a car among the avaliable pla
 Carty helps you find the optimal allocation
 
 
+/home/alessandro/Scrivania/carty.mp4
+
+
 ### How does it work? ###
 
 * Create your profile

@@ -18,7 +18,7 @@ https://user-images.githubusercontent.com/20478513/147542471-ee255123-d615-4502-
 * Join a group or create a new one
 * Add or modify your data (avaliable places, address of departure)
 * Run the simulation (it optimizes the solution for all the people present in the group)
-* See the results
+* Check the results
 
 
 ### Tech ###
